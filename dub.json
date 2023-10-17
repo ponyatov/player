@@ -9,5 +9,15 @@
     "targetName":  "player",
     "dependencies": {
         "bindbc-sdl": "~>1.4.2"
-    }
+    },
+    "versions": [
+        "SDL_200",
+        "SDL_Mixer_200"
+    ],
+    "subConfigurations": {
+        "bindbc-sdl": "static"
+    },
+    "libs": [
+        "SDL2", "SDL2_mixer"
+    ]
 }
