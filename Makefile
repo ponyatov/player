@@ -67,8 +67,8 @@ $(GZ)/$(LDC_GZ):
 # merge
 
 MERGE += README.md Makefile apt.linux
-MERGE += .gitignore .clang-format .editorconfig
-MERGE += .vscode bin doc media src tmp
+MERGE += .gitignore .gitattributes .stignore .clang-format .editorconfig
+MERGE += .vscode bin doc media src tmp dub.json
 
 .PHONY: dev
 dev:
