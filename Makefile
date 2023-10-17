@@ -66,7 +66,7 @@ $(GZ)/$(LDC_GZ):
 
 # merge
 
-MERGE += README.md Makefile apt.linux
+MERGE += README.md Makefile apt.Linux
 MERGE += .gitignore .gitattributes .stignore .clang-format .editorconfig
 MERGE += .vscode bin doc media src tmp dub.json
 
