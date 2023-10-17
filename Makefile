@@ -66,6 +66,23 @@ $(GZ)/$(LDC_GZ):
 
 # merge
 
+MERGE += README.md Makefile apt.linux
+MERGE += .gitignore .clang-format .editorconfig
+MERGE += .vscode bin doc media src tmp
+
+.PHONY: dev
+dev:
+	git push -v
+	git checkout $@
+	git pull -v
+	git checkout shadow -- $(MERGE)
+
+.PHONY: shadow
+shadow:
+	git push -v
+	git checkout $@
+	git pull -v
+
 .PHONY: release
 release:
 	git tag $(NOW)-$(REL)
