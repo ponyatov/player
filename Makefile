@@ -41,4 +41,32 @@ doc/yazyk_programmirovaniya_d.pdf:
 doc/Programming_in_D.pdf:
 	$(CURL) $@ http://ddili.org/ders/d.en/Programming_in_D.pdf
 
+# install
+APT_SRC = /etc/apt/sources.list.d
+ETC_APT = $(APT_SRC)/d-apt.list $(APT_SRC)/llvm.list
+.PHONY: install update doc gz
+install: doc gz $(ETC_APT)
+	sudo apt update && sudo apt --allow-unauthenticated install -yu d-apt-keyring
+	$(MAKE) update
+update:
+	sudo apt update
+	sudo apt install -yu `cat apt.txt`
+$(APT_SRC)/%: tmp/%
+	sudo cp $< $@
+tmp/d-apt.list:
+	$(CURL) $@ http://master.dl.sourceforge.net/project/d-apt/files/d-apt.list
 
+gz: $(LDC2)
+
+$(LDC2): $(GZ)/$(LDC_GZ)
+	cd /opt ; sudo sh -c "xzcat $< | tar x && touch $@"
+
+$(GZ)/$(LDC_GZ):
+	$(CURL) $@ https://github.com/ldc-developers/ldc/releases/download/v$(LDC_VER)/$(LDC_GZ)
+
+# merge
+
+.PHONY: release
+release:
+	git tag $(NOW)-$(REL)
+	git push -v --tags
