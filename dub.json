@@ -4,10 +4,10 @@
     "authors":    ["Dmitry Ponyatov <dponyatov@gmail.com>"],
     "copyright":   "Copyright © 2023, Dmitry Ponyatov <dponyatov@gmail.com>",
     "license":     "MIT",
-    "targetType":  "none",
+    "targetType":  "executable",
     "targetPath":  "bin",
     "targetName":  "player",
-    "subPackages": [
-        "hello"
-    ]
+    "dependencies": {
+        "bindbc-sdl": "~>1.4.2"
+    }
 }
