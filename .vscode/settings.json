@@ -1,0 +1,51 @@
+{
+    "multiCommand.commands": [
+        { "command": "multiCommand.f11",
+            "sequence": [ "workbench.action.files.saveAll",
+                { "command": "workbench.action.terminal.sendSequence",
+                    "args": {"text": "\u000D clear ; LANG=C make format \u000D"}}]},
+        { "command": "multiCommand.f12",
+            "sequence": [ "workbench.action.files.saveAll",
+                { "command": "workbench.action.terminal.sendSequence",
+                    "args": {"text": "\u000D clear ; LANG=C make player \u000D"}}]}
+    ],
+
+    // files
+    "files.associations": {
+        "*.S": "gas",
+    },
+
+    // editor
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.rulers": [80],
+    "workbench.tree.indent": 24,
+    "explorer.autoReveal": false,
+    "files.insertFinalNewline": true,
+    "git.enabled": false,
+
+    // C++
+    "[c,cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format",
+        "editor.formatOnSave":     true
+    },
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+
+    // clang-format
+    "clang-format.executable":     "clang-format",
+    "clang-format.fallbackStyle":  "Google",
+    "clang-format.style": "file",
+
+    // D
+    "d.overrideDfmtEditorconfig": true,
+    "dfmt.braceStyle": "otbs",
+    "d.projectImportPaths": [
+        "${userHome}/D/ref",
+        "${userHome}/.dub/packages"
+    ],
+    "d.dubPath": "/usr/bin/dub",
+    "d.dmdPath": "/usr/bin/dmd",
+    "d.dubCompiler": "/usr/bin/dub",
+    "d.toolchainRequirements.dub": "1.34.0"
+}
