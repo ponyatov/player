@@ -75,8 +75,9 @@ QEMU = qemu-system-$(ARCH)
 XPATH    = PATH=$(HOST)/bin:$(PATH)
 CFG_HOST = configure --prefix=$(HOST)
 
-KERNEL   = $(FW)/$(APP)_$(HW).kernel
 BZIMAGE  = tmp/linux/arch/x86/boot/bzImage
+KERNEL   = $(FW)/$(APP)_$(HW).kernel
+INITRD   = $(FW)/$(APP)_$(HW).cpio.gz
 
 # src
 D += $(wildcard src/*.d*)
@@ -87,13 +88,18 @@ all: $(D)
 	dub run -- media/park.mp4 media/dwsample1.mp3
 
 .PHONY: fw
-fw: $(KERNEL)
+fw: $(KERNEL) $(INITRD)
 $(KERNEL): $(BZIMAGE)
 	cp $< $@
 
+$(INITRD):
+	cd $(ROOT) ; find . -print0 | cpio --null --create --format=newc | gzip -9 > $@
+
 .PHONY: qemu
-qemu: $(KERNEL)
-	$(QEMU) $(QEMU_CFG) -nographic -kernel $< -append console=ttyS0,115200
+qemu: $(KERNEL) $(INITRD)
+	$(QEMU) $(QEMU_CFG) -nographic -serial stdio \
+		-kernel $(KERNEL) -initrd $(INITRD)      \
+		-append "console=ttyS0,115200"
 
 # format
 format: tmp/format_d
@@ -153,10 +159,10 @@ CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                           \
                 --disable-libmudflap --disable-libssp --disable-libatomic  \
                 --disable-libquadmath --disable-threads
 CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                           \
-                --with-headers=$(ROOT)          --enable-languages="c"     \
+                --with-headers=$(ROOT)/usr/include --enable-languages="c"  \
                 --disable-shared --disable-decimal-float --disable-libgomp \
                 --disable-libmudflap --disable-libssp --disable-libatomic  \
-                --disable-libquadmath --disable-threads
+                --disable-libquadmath --enable-threads
 
 gcc0: $(HOST)/bin/$(TARGET)-gcc
 $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
@@ -164,7 +170,8 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 	rm -rf $(TMP)/gcc0 ; mkdir $(TMP)/gcc0 ; cd $(TMP)/gcc0                ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC0)                        &&\
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
-	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
+	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
+	touch $@
 
 gcc1: $(HOST)/bin/$(TARGET)-c++filt
 $(HOST)/bin/$(TARGET)-c++filt: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
@@ -172,7 +179,8 @@ $(HOST)/bin/$(TARGET)-c++filt: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md 
 	rm -rf $(TMP)/gcc1 ; mkdir $(TMP)/gcc1 ; cd $(TMP)/gcc1                ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                        &&\
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
-	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
+	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
+	touch $@
 
 .PHONY: linux
 
