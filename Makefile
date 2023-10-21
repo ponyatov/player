@@ -75,6 +75,9 @@ QEMU = qemu-system-$(ARCH)
 XPATH    = PATH=$(HOST)/bin:$(PATH)
 CFG_HOST = configure --prefix=$(HOST)
 
+KERNEL   = $(FW)/$(APP)_$(HW).kernel
+BZIMAGE  = tmp/linux/arch/x86/boot/bzImage
+
 # src
 D += $(wildcard src/*.d*)
 
@@ -84,7 +87,7 @@ all: $(D)
 	dub run -- media/park.mp4 media/dwsample1.mp3
 
 .PHONY: qemu
-qemu: fw/bzImage
+qemu: $(KERNEL)
 	$(QEMU) $(QEMU_CFG) -nographic -kernel $< -append console=ttyS0,115200
 
 # format
@@ -163,7 +166,12 @@ linux: $(REF)/$(LINUX)/README.md
 	echo CONFIG_DEFAULT_HOSTNAME=\"$(APP)\"        >> $(KONFIG) &&\
 	$(KMAKE)            menuconfig                              &&\
 	$(KMAKE) -j$(CORES) bzImage modules                         &&\
-	$(KMAKE)            modules_install headers_install
+	$(KMAKE)            modules_install headers_install && $(MAKE) fw
+
+.PHONY: fw
+fw: $(KERNEL)
+$(KERNEL): $(BZIMAGE)
+	cp $< $@
 
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
