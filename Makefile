@@ -304,8 +304,8 @@ $(GZ)/$(SYSLINUX_GZ):
 # merge
 MERGE += README.md Makefile apt.Linux
 MERGE += .gitignore .gitattributes .stignore .clang-format .editorconfig
-MERGE += .vscode bin doc media src tmp dub.json
-MERGE += all hw cpu arch app
+MERGE += .vscode bin doc src tmp dub.json
+MERGE += all hw cpu arch app fw ref host root
 
 .PHONY: dev
 dev:
