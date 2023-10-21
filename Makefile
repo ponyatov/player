@@ -69,6 +69,7 @@ BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
 CURL = curl -L -o
 LLC  = llc-15
 LDC2 = /opt/$(LDC_OS)/bin/ldc2
+QEMU = qemu-system-$(ARCH)
 
 # cfg
 XPATH    = PATH=$(HOST)/bin:$(PATH)
@@ -82,7 +83,6 @@ D += $(wildcard src/*.d*)
 all: $(D)
 	dub run -- media/park.mp4 media/dwsample1.mp3
 
-QEMU = qemu-system-$(ARCH)
 .PHONY: qemu
 qemu: fw/bzImage
 	$(QEMU) $(QEMU_CFG) -nographic -kernel $< -append console=ttyS0,115200
@@ -93,31 +93,58 @@ tmp/format_d: $(D)
 	dub run dfmt -- -i $? && touch $@
 
 # cross
+OPT_NATIVE = -O3 -march=native -mtune=native
+OPT_HOST   = CFLAGS="$(OPT_NATIVE)" CXXFLAGS="$(OPT_NATIVE)"
+
 .PHONY:   gcclibs0 gmp0 mpfr0 mpc0
 gcclibs0: gmp0 mpfr0 mpc0
 
 WITH_GCCLIBS = --with-gmp=$(HOST) --with-mpfr=$(HOST) --with-mpc=$(HOST)
-CFG_GCCLIBS  = $(WITH_GCCLIBS) --disable-shared
-OPT_GCCLIBS  = -O3 -march=native -mtune=native
-CFG_GCCLIBS += CFLAGS="$(OPT_GCCLIBS)" CXXFLAGS="$(OPT_GCCLIBS)"
+CFG_GCCLIBS0 = $(WITH_GCCLIBS) --disable-shared $(OPT_HOST)
 
 gmp0: $(HOST)/lib/libgmp.a
 $(HOST)/lib/libgmp.a: $(REF)/$(GMP)/README
 	rm -rf $(TMP)/gmp ; mkdir $(TMP)/gmp ; cd $(TMP)/gmp ;\
-	$(REF)/$(GMP)/$(CFG_HOST) $(CFG_GCCLIBS) &&\
+	$(REF)/$(GMP)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 mpfr0: $(HOST)/lib/libmpfr.a
 $(HOST)/lib/libmpfr.a: $(HOST)/lib/libgmp.a $(REF)/$(MPFR)/README.md
 	rm -rf $(TMP)/mpfr ; mkdir $(TMP)/mpfr ; cd $(TMP)/mpfr ;\
-	$(REF)/$(MPFR)/$(CFG_HOST) $(CFG_GCCLIBS) &&\
+	$(REF)/$(MPFR)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 mpc0: $(HOST)/lib/libmpc.a
 $(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
 	rm -rf $(TMP)/mpc ; mkdir $(TMP)/mpc ; cd $(TMP)/mpc ;\
-	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS) &&\
+	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
+
+.PHONY: binutils0 gcc0
+
+CFG_BINUTILS0 = --disable-nls $(OPT_HOST)                 \
+                --target=$(TARGET) --with-sysroot=$(ROOT) \
+                --disable-multilib
+
+binutils0: $(HOST)/bin/$(TARGET)-ld
+$(HOST)/bin/$(TARGET)-ld: $(REF)/$(BINUTILS)/README.md
+	rm -rf $(TMP)/binutils0 ; mkdir $(TMP)/binutils0 ; cd $(TMP)/binutils0 ;\
+	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS0) &&\
+	$(MAKE) -j$(CORES) && $(MAKE) install
+
+CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                           \
+                --without-headers --with-newlib --enable-languages="c"     \
+                --disable-shared --disable-decimal-float --disable-libgomp \
+                --disable-libmudflap --disable-libssp --disable-libatomic  \
+                --disable-libquadmath --disable-threads
+
+gcc0: $(HOST)/bin/$(TARGET)-gcc
+$(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
+                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
+	rm -rf $(TMP)/gcc0 ; mkdir $(TMP)/gcc0 ; cd $(TMP)/gcc0                ;\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC0)                        &&\
+	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
+	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
 
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
