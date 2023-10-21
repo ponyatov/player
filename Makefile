@@ -152,12 +152,25 @@ CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                           \
                 --disable-shared --disable-decimal-float --disable-libgomp \
                 --disable-libmudflap --disable-libssp --disable-libatomic  \
                 --disable-libquadmath --disable-threads
+CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                           \
+                --with-headers=$(ROOT)          --enable-languages="c"     \
+                --disable-shared --disable-decimal-float --disable-libgomp \
+                --disable-libmudflap --disable-libssp --disable-libatomic  \
+                --disable-libquadmath --disable-threads
 
 gcc0: $(HOST)/bin/$(TARGET)-gcc
 $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
                            $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
 	rm -rf $(TMP)/gcc0 ; mkdir $(TMP)/gcc0 ; cd $(TMP)/gcc0                ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC0)                        &&\
+	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
+	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
+
+gcc1: $(HOST)/bin/$(TARGET)-c++filt
+$(HOST)/bin/$(TARGET)-c++filt: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
+                               $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
+	rm -rf $(TMP)/gcc1 ; mkdir $(TMP)/gcc1 ; cd $(TMP)/gcc1                ;\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                        &&\
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
 
