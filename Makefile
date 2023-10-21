@@ -123,9 +123,21 @@ $(GZ)/$(LDC_GZ):
 
 # merge
 
+emFiles:
+	mkdir -p hw cpu arch app $(GZ) $(HOST) $(ROOT) $(FW)
+	cp tmp/.gitignore $(HOST)/
+	cp tmp/.gitignore $(ROOT)/
+	cp tmp/.gitignore $(FW)/
+
+	touch all/all.mk
+	touch all/all.kernel
+	touch all/all.uclibc
+	touch all/all.bb
+
 MERGE += README.md Makefile apt.Linux
 MERGE += .gitignore .gitattributes .stignore .clang-format .editorconfig
 MERGE += .vscode bin doc media src tmp dub.json
+MERGE += all hw cpu arch app
 
 .PHONY: dev
 dev:
