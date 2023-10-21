@@ -98,7 +98,7 @@ $(INITRD): $(ROOT)/init
 
 .PHONY: qemu
 qemu: $(KERNEL) $(INITRD)
-	$(QEMU) $(QEMU_CFG) -nographic          \
+	xterm -e $(QEMU) $(QEMU_CFG) -nographic \
 		-kernel $(KERNEL) -initrd $(INITRD) \
 		-append "console=ttyS0,115200"
 
@@ -219,7 +219,10 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 	echo CROSS_COMPILER_PREFIX=\"$(TARGET)-\"   >> $(UONFIG) &&\
 	echo RUNTIME_PREFIX=\"\"                    >> $(UONFIG) &&\
 	echo DEVEL_PREFIX=\"/usr\"                  >> $(UONFIG) &&\
-	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
+	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) hostutils &&\
+	$(UMAKE) PREFIX=$(HOST) DEVEL_PREFIX=/ RUNTIME_PREFIX=/ install_hostutils &&\
+	mv $(HOST)/sbin/* $(HOST)/bin/
+# $(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
 
 .PHONY: init
 init: $(ROOT)/init
