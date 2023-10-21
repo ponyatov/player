@@ -86,6 +86,11 @@ D += $(wildcard src/*.d*)
 all: $(D)
 	dub run -- media/park.mp4 media/dwsample1.mp3
 
+.PHONY: fw
+fw: $(KERNEL)
+$(KERNEL): $(BZIMAGE)
+	cp $< $@
+
 .PHONY: qemu
 qemu: $(KERNEL)
 	$(QEMU) $(QEMU_CFG) -nographic -kernel $< -append console=ttyS0,115200
@@ -149,14 +154,13 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
 
-.PHONY: kernel
+.PHONY: linux
 
 KMAKE  = $(XPATH) make -C $(REF)/$(LINUX) O=$(TMP)/linux \
          ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- \
          INSTALL_MOD_PATH=$(ROOT) INSTALL_HDR_PATH=$(ROOT)/usr
 KONFIG = $(TMP)/linux/.config
 
-.PHONY: linux
 linux: $(REF)/$(LINUX)/README.md
 	mkdir -p $(TMP)/linux ; rm $(KONFIG) ; $(KMAKE) allnoconfig &&\
 	cat $(CWD)/all/all.kernel $(CWD)/arch/$(ARCH).kernel          \
@@ -168,10 +172,23 @@ linux: $(REF)/$(LINUX)/README.md
 	$(KMAKE) -j$(CORES) bzImage modules                         &&\
 	$(KMAKE)            modules_install headers_install && $(MAKE) fw
 
-.PHONY: fw
-fw: $(KERNEL)
-$(KERNEL): $(BZIMAGE)
-	cp $< $@
+.PHONY: uclibc
+
+UMAKE  = $(XPATH) make -C $(REF)/$(UCLIBC) O=$(TMP)/uclibc \
+         ARCH=$(ARCH) PREFIX=$(ROOT)
+UONFIG = $(TMP)/uclibc/.config
+
+uclibc: $(REF)/$(UCLIBC)/README.md
+	mkdir -p $(TMP)/uclibc ; cd $(TMP)/uclibc                 ;\
+	rm -f $(UONFIG) ; $(UMAKE) allnoconfig                   &&\
+	cat $(CWD)/all/all.uclibc $(CWD)/arch/$(ARCH).uclibc       \
+	    $(CWD)/cpu/$(CPU).uclibc $(CWD)/hw/$(HW).uclibc        \
+	    $(CWD)/app/$(APP).uclibc                >> $(UONFIG) &&\
+	echo KERNEL_HEADERS=\"$(ROOT)/usr/include\" >> $(UONFIG) &&\
+	echo CROSS_COMPILER_PREFIX=\"$(TARGET)-\"   >> $(UONFIG) &&\
+	echo RUNTIME_PREFIX=\"\"                    >> $(UONFIG) &&\
+	echo DEVEL_PREFIX=\"/usr\"                  >> $(UONFIG) &&\
+	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
 
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
