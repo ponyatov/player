@@ -146,9 +146,30 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc
 
+.PHONY: kernel
+
+KMAKE  = $(XPATH) make -C $(REF)/$(LINUX) O=$(TMP)/linux \
+         ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- \
+         INSTALL_MOD_PATH=$(ROOT) INSTALL_HDR_PATH=$(ROOT)/usr
+KONFIG = $(TMP)/linux/.config
+
+.PHONY: linux
+linux: $(REF)/$(LINUX)/README.md
+	mkdir -p $(TMP)/linux ; rm $(KONFIG) ; $(KMAKE) allnoconfig &&\
+	cat $(CWD)/all/all.kernel $(CWD)/arch/$(ARCH).kernel          \
+		$(CWD)/cpu/$(CPU).kernel $(CWD)/hw/$(HW).kernel           \
+		$(CWD)/app/$(APP).kernel                   >> $(KONFIG) &&\
+	echo CONFIG_LOCALVERSION=\"-$(APP)@$(HW)\"     >> $(KONFIG) &&\
+	echo CONFIG_DEFAULT_HOSTNAME=\"$(APP)\"        >> $(KONFIG) &&\
+	$(KMAKE)            menuconfig                              &&\
+	$(KMAKE) -j$(CORES) bzImage modules                         &&\
+	$(KMAKE)            modules_install headers_install
+
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
 	cd $(REF) ; xzcat $< | tar x && touch $@
+$(REF)/%/README.md: $(GZ)/%.tar.bz2
+	cd $(REF) ; bzcat $< | tar x && touch $@
 $(REF)/%/README.md: $(GZ)/%.tar.gz
 	cd $(REF) ;  zcat $< | tar x && touch $@
 $(REF)/$(GMP)/README: $(GZ)/$(GMP_GZ)
@@ -191,7 +212,11 @@ $(GZ)/$(LDC_GZ):
 
 # src
 .PHONY: src
-src: $(REF)/$(GMP)/README $(REF)/$(MPFR)/README.md $(REF)/$(MPC)/README.md
+src: $(REF)/$(GMP)/README $(REF)/$(MPFR)/README.md $(REF)/$(MPC)/README.md \
+     $(REF)/$(BINUTILS)/README.md $(REF)/$(GCC)/README.md                  \
+     $(REF)/$(LINUX)/README.md $(REF)/$(UCLIBC)/README.md                  \
+     $(REF)/$(BUSYBOX)/README.md $(REF)/$(SYSLINUX)/README.md
+	du -csh ref/*
 
 $(GZ)/$(GMP_GZ):
 	$(CURL) $@ https://github.com/alisw/GMP/archive/refs/tags/v$(GMP_VER).tar.gz

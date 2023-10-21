@@ -13,6 +13,9 @@
     // files
     "files.associations": {
         "*.S": "gas",
+        "*.kernel": "makefile",
+        "*.uclibc": "makefile",
+        "*.bb": "makefile",
     },
 
     // editor
