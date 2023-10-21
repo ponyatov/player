@@ -107,6 +107,18 @@ $(HOST)/lib/libgmp.a: $(REF)/$(GMP)/README
 	$(REF)/$(GMP)/$(CFG_HOST) $(CFG_GCCLIBS) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
+mpfr0: $(HOST)/lib/libmpfr.a
+$(HOST)/lib/libmpfr.a: $(HOST)/lib/libgmp.a $(REF)/$(MPFR)/README.md
+	rm -rf $(TMP)/mpfr ; mkdir $(TMP)/mpfr ; cd $(TMP)/mpfr ;\
+	$(REF)/$(MPFR)/$(CFG_HOST) $(CFG_GCCLIBS) &&\
+	$(MAKE) -j$(CORES) && $(MAKE) install
+
+mpc0: $(HOST)/lib/libmpc.a
+$(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
+	rm -rf $(TMP)/mpc ; mkdir $(TMP)/mpc ; cd $(TMP)/mpc ;\
+	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS) &&\
+	$(MAKE) -j$(CORES) && $(MAKE) install
+
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
 	cd $(REF) ; xzcat $< | tar x && touch $@
