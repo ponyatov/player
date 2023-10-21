@@ -128,16 +128,23 @@ $(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
 	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
-.PHONY: binutils0 gcc0
+.PHONY: binutils0 gcc0 binutils1 gcc1
 
 CFG_BINUTILS0 = --disable-nls $(OPT_HOST)                 \
                 --target=$(TARGET) --with-sysroot=$(ROOT) \
                 --disable-multilib
+CFG_BINUTILS1 = $(CFG_BINUTILS0)
 
 binutils0: $(HOST)/bin/$(TARGET)-ld
 $(HOST)/bin/$(TARGET)-ld: $(REF)/$(BINUTILS)/README.md
 	rm -rf $(TMP)/binutils0 ; mkdir $(TMP)/binutils0 ; cd $(TMP)/binutils0 ;\
 	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS0) &&\
+	$(MAKE) -j$(CORES) && $(MAKE) install
+
+binutils1: $(HOST)/bin/$(TARGET)-as
+$(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
+	rm -rf $(TMP)/binutils1 ; mkdir $(TMP)/binutils1 ; cd $(TMP)/binutils1 ;\
+	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS1) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                           \
