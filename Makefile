@@ -98,7 +98,7 @@ $(INITRD): $(ROOT)/init
 
 .PHONY: qemu
 qemu: $(KERNEL) $(INITRD)
-	$(QEMU) $(QEMU_CFG) -nographic          \
+	xterm -e $(QEMU) $(QEMU_CFG) -nographic \
 		-kernel $(KERNEL) -initrd $(INITRD) \
 		-append "console=ttyS0,115200"
 
