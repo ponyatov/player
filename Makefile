@@ -26,7 +26,7 @@ D += $(wildcard src/*.d*)
 # all
 .PHONY: all
 all: $(D)
-	dub run -- media/dwsample1.mp3
+	dub run -- media/park.mp4 media/dwsample1.mp3
 
 # format
 format: tmp/format_d

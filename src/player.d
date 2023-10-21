@@ -6,6 +6,8 @@ import std.string;
 import sdl;
 import sdl_mixer;
 
+import ffmpeg;
+
 class MediaFile {
     string filename;
     this(string filename) {
@@ -15,9 +17,40 @@ class MediaFile {
     void play() {
         writeln(filename);
     }
+
+    override string toString() {
+        return format("%s(%s)", this.classinfo.name, filename);
+    }
 }
 
-MediaFile[] playlist;
+class PlayList {
+    MediaFile[] item;
+    uint current = 0;
+
+    PlayList opAppend(MediaFile file) {
+        return this;
+    }
+
+    void opOpAssign(string op : "~")(MediaFile rhs) {
+        writefln("playlist += %s", rhs);
+        item ~= rhs;
+    }
+
+    bool empty() {
+        return item.empty();
+    }
+
+    MediaFile front() {
+        return item.front();
+    }
+
+    void popFront() {
+        item.popFront();
+    }
+
+}
+
+PlayList playlist;
 
 class MP3 : MediaFile {
     this(string filename) {
@@ -30,6 +63,12 @@ class MP3 : MediaFile {
         music = Mix_LoadMUS(filename.toStringz);
         assert(music !is null);
         Mix_PlayMusic(music, 1);
+    }
+}
+
+class MP4 : MediaFile {
+    this(string filename) {
+        super(filename);
     }
 }
 
@@ -47,8 +86,12 @@ enum Audio {
 void main(string[] args) {
     foreach (argc, argv; args.enumerate) {
         writefln("argv[%d] = <%s>", argc, argv);
-        if (argv.endsWith(".mp3"))
-            playlist ~= new MP3(argv);
+        if (argc > 0) {
+            if (argv.endsWith(".mp3"))
+                playlist ~= new MP3(argv);
+            else if (argv.endsWith(".mp4"))
+                playlist ~= new MP4(argv);
+        }
     }
     // 
     assert(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO) == 0);
@@ -57,12 +100,14 @@ void main(string[] args) {
     const auto mixer_flags = MIX_INIT_MP3;
     assert(mixer_flags == Mix_Init(mixer_flags));
     assert(Mix_OpenAudio(Audio.freq, Audio.format, Audio.channels, 0) == 0);
+    av_register_all();
     // 
     auto wmain = SDL_CreateWindow(args[0].toStringz, SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, Video.W, Video.H, SDL_WINDOW_SHOWN);
     assert(wmain);
     // 
-    playlist[0].play();
+    foreach (file; playlist)
+        file.play();
     // 
     bool quit = false;
     SDL_Event event;

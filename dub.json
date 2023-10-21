@@ -8,7 +8,8 @@
     "targetPath":  "bin",
     "targetName":  "player",
     "dependencies": {
-        "bindbc-sdl": "~>1.4.2"
+        "bindbc-sdl": "~>1.4.2",
+        "ffmpeg-d": "~>4.4.1"
     },
     "versions": [
         "SDL_200",
