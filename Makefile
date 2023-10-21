@@ -219,7 +219,10 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 	echo CROSS_COMPILER_PREFIX=\"$(TARGET)-\"   >> $(UONFIG) &&\
 	echo RUNTIME_PREFIX=\"\"                    >> $(UONFIG) &&\
 	echo DEVEL_PREFIX=\"/usr\"                  >> $(UONFIG) &&\
-	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
+	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) hostutils &&\
+	$(UMAKE) PREFIX=$(HOST) DEVEL_PREFIX=/ RUNTIME_PREFIX=/ install_hostutils &&\
+	mv $(HOST)/sbin/* $(HOST)/bin/
+# $(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
 
 .PHONY: init
 init: $(ROOT)/init
