@@ -121,19 +121,19 @@ CFG_GCCLIBS0 = $(WITH_GCCLIBS) --disable-shared $(OPT_HOST)
 
 gmp0: $(HOST)/lib/libgmp.a
 $(HOST)/lib/libgmp.a: $(REF)/$(GMP)/README
-	rm -rf $(TMP)/gmp ; mkdir $(TMP)/gmp ; cd $(TMP)/gmp ;\
+	mkdir -p $(TMP)/gmp0 ; cd $(TMP)/gmp0 ;\
 	$(REF)/$(GMP)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 mpfr0: $(HOST)/lib/libmpfr.a
 $(HOST)/lib/libmpfr.a: $(HOST)/lib/libgmp.a $(REF)/$(MPFR)/README.md
-	rm -rf $(TMP)/mpfr ; mkdir $(TMP)/mpfr ; cd $(TMP)/mpfr ;\
+	mkdir -p $(TMP)/mpfr0 ; cd $(TMP)/mpfr0 ;\
 	$(REF)/$(MPFR)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 mpc0: $(HOST)/lib/libmpc.a
 $(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
-	rm -rf $(TMP)/mpc ; mkdir $(TMP)/mpc ; cd $(TMP)/mpc ;\
+	mkdir -p $(TMP)/mpc0 ; cd $(TMP)/mpc0 ;\
 	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
@@ -141,7 +141,7 @@ $(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
 
 CFG_BINUTILS0 = --disable-nls $(OPT_HOST)                 \
                 --target=$(TARGET) --with-sysroot=$(ROOT) \
-                --disable-multilib
+                --disable-multilib --disable-bootstrap
 CFG_BINUTILS1 = $(CFG_BINUTILS0)
 
 binutils0: $(HOST)/bin/$(TARGET)-ld
@@ -156,30 +156,30 @@ $(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
 	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS1) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
-CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                           \
-                --without-headers --with-newlib --enable-languages="c"     \
-                --disable-shared --disable-decimal-float --disable-libgomp \
-                --disable-libmudflap --disable-libssp --disable-libatomic  \
+CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                            \
+                --without-headers --with-newlib --enable-languages="c"      \
+                --disable-shared --disable-decimal-float --disable-libgomp  \
+                --disable-libmudflap --disable-libssp --disable-libatomic   \
                 --disable-libquadmath --disable-threads
-CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                           \
-                --with-headers=$(ROOT)/usr/include --enable-languages="c"  \
-                --disable-shared --disable-decimal-float --disable-libgomp \
-                --disable-libmudflap --disable-libssp --disable-libatomic  \
+CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                            \
+                --with-headers=$(ROOT)/usr/include --enable-languages="c,d" \
+                --disable-shared --disable-decimal-float --disable-libgomp  \
+                --disable-libmudflap --disable-libssp --disable-libatomic   \
                 --disable-libquadmath --enable-threads
 
 gcc0: $(HOST)/bin/$(TARGET)-gcc
 $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
                            $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
-	rm -rf $(TMP)/gcc0 ; mkdir $(TMP)/gcc0 ; cd $(TMP)/gcc0                ;\
+	mkdir -p $(TMP)/gcc0 ; cd $(TMP)/gcc0                                  ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC0)                        &&\
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
 	touch $@
 
-gcc1: $(HOST)/bin/$(TARGET)-c++filt
-$(HOST)/bin/$(TARGET)-c++filt: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
-                               $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
-	rm -rf $(TMP)/gcc1 ; mkdir $(TMP)/gcc1 ; cd $(TMP)/gcc1                ;\
+gcc1: $(HOST)/bin/$(TARGET)-gdc
+$(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
+                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
+	mkdir -p $(TMP)/gcc1 ; cd $(TMP)/gcc1                                  ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                        &&\
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
@@ -219,15 +219,15 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 	echo CROSS_COMPILER_PREFIX=\"$(TARGET)-\"   >> $(UONFIG) &&\
 	echo RUNTIME_PREFIX=\"\"                    >> $(UONFIG) &&\
 	echo DEVEL_PREFIX=\"/usr\"                  >> $(UONFIG) &&\
-	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) hostutils &&\
+	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install &&\
+	$(UMAKE) -j$(CORES) hostutils &&\
 	$(UMAKE) PREFIX=$(HOST) DEVEL_PREFIX=/ RUNTIME_PREFIX=/ install_hostutils &&\
 	mv $(HOST)/sbin/* $(HOST)/bin/
-# $(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
 
 .PHONY: init
 init: $(ROOT)/init
-$(ROOT)/%: src/%.c
-	$(XPATH) $(TARGET)-gcc -o $@ $< && file $@
+$(ROOT)/%: src/%.c Makefile
+	$(XPATH) $(TARGET)-gcc -o $@ $< && file $@ && $(HOST)/bin/ldd $@
 
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
