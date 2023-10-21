@@ -81,6 +81,7 @@ INITRD   = $(FW)/$(APP)_$(HW).cpio.gz
 
 # src
 D += $(wildcard src/*.d*)
+C += $(wildcard src/*.c*)
 
 # all
 .PHONY: all
@@ -92,17 +93,19 @@ fw: $(KERNEL) $(INITRD)
 $(KERNEL): $(BZIMAGE)
 	cp $< $@
 
-$(INITRD):
+$(INITRD): $(ROOT)/init
 	cd $(ROOT) ; find . -print0 | cpio --null --create --format=newc | gzip -9 > $@
 
 .PHONY: qemu
 qemu: $(KERNEL) $(INITRD)
-	$(QEMU) $(QEMU_CFG) -nographic -serial stdio \
-		-kernel $(KERNEL) -initrd $(INITRD)      \
+	$(QEMU) $(QEMU_CFG) -nographic          \
+		-kernel $(KERNEL) -initrd $(INITRD) \
 		-append "console=ttyS0,115200"
 
 # format
-format: tmp/format_d
+format: tmp/format_c tmp/format_d
+tmp/format_c: $(C)
+	clang-format -style=file -i $? && touch $@
 tmp/format_d: $(D)
 	dub run dfmt -- -i $? && touch $@
 
@@ -217,6 +220,11 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 	echo RUNTIME_PREFIX=\"\"                    >> $(UONFIG) &&\
 	echo DEVEL_PREFIX=\"/usr\"                  >> $(UONFIG) &&\
 	$(UMAKE) menuconfig && $(UMAKE) -j$(CORES) && $(UMAKE) install
+
+.PHONY: init
+init: $(ROOT)/init
+$(ROOT)/%: src/%.c
+	$(XPATH) $(TARGET)-gcc -o $@ $< && file $@
 
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
