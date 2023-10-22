@@ -50,7 +50,8 @@ class PlayList {
 
 }
 
-PlayList playlist;
+// PlayList playlist;
+MediaFile[] playlist;
 
 class MP3 : MediaFile {
     this(string filename) {
