@@ -4,4 +4,4 @@ d-apt-keyring dmd-compiler dmd-tools dub g++
 llvm-15 libclang-15-dev
 libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
 libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev
-build-essential flex bison bc bzip2 gdc
+build-essential flex bison bc bzip2 texinfo gdc

@@ -1,7 +1,7 @@
 # var
 MODULE  = $(notdir $(CURDIR))
 module  = $(shell echo $(MODULE) | tr A-Z a-z)
-OS      = $(shell uname -o|tr / _)
+OS      = $(shell uname -s)
 NOW     = $(shell date +%d%m%y)
 REL     = $(shell git rev-parse --short=4 HEAD)
 BRANCH  = $(shell git rev-parse --abbrev-ref HEAD)
@@ -32,7 +32,8 @@ LDC_VER      = 1.32.0
 ## LDC_VER   = 1.34.0 debian 12 libc 2.29 since 1.32.1
 BINUTILS_VER = 2.41
 GCC_VER      = 13.2.0
-GCC_VER      = 12.3.0
+# GCC_VER      = 12.3.0
+# GCC_VER      = 11.4.0
 GMP_VER      = 6.2.1
 MPFR_VER     = 4.2.1
 MPC_VER      = 1.3.1
@@ -48,7 +49,6 @@ LDC_GZ      = $(LDC_OS).tar.xz
 ##
 BINUTILS    = binutils-$(BINUTILS_VER)
 GCC         = gcc-$(GCC_VER)
-GCC11       = gcc-11.4.0
 GMP         = gmp-$(GMP_VER)
 MPFR        = mpfr-$(MPFR_VER)
 MPC         = mpc-$(MPC_VER)
@@ -68,11 +68,13 @@ UCLIBC_GZ   = $(UCLIBC).tar.xz
 BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
 
 # tool
-CURL  = curl -L -o
-GDC11 = /usr/local/bin/gdc-11
-LLC   = llc-15
-LDC2  = /opt/$(LDC_OS)/bin/ldc2
-QEMU  = qemu-system-$(ARCH)
+CURL = curl -L -o
+GDCH = /usr/local/bin/gdc-host
+CCH  = /usr/local/bin/gcc-host
+CXXH = /usr/local/bin/g++-host
+LLC  = llc-15
+LDC2 = /opt/$(LDC_OS)/bin/ldc2
+QEMU = qemu-system-$(ARCH)
 
 # cfg
 XPATH    = PATH=$(HOST)/bin:$(PATH)
@@ -159,30 +161,28 @@ $(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
 	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS1) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
-CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                            \
-                --without-headers --with-newlib --enable-languages="c"      \
-                --disable-shared --disable-decimal-float --disable-libgomp  \
-                --disable-libmudflap --disable-libssp --disable-libatomic   \
-                --disable-libquadmath --disable-threads
-CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                            \
-                --with-headers=$(ROOT)/usr/include --enable-languages="c,d" \
-                --disable-shared --disable-decimal-float --disable-libgomp  \
-                --disable-libmudflap --disable-libssp --disable-libatomic   \
-                --disable-libquadmath --enable-threads
-CFG_GDC11     = --disable-nls $(OPT_HOST) --prefix=/usr/local               \
-                --disable-multilib --disable-bootstrap $(WITH_GCCLIBS)      \
-                --program-suffix="-11" --enable-languages="d"               \
-                --disable-shared --disable-decimal-float --disable-libgomp  \
-                --disable-libmudflap --disable-libssp --disable-libatomic   \
-                --disable-libquadmath --enable-threads
+GCC_DISABLE = --disable-shared --disable-decimal-float --disable-libgomp   \
+              --disable-libmudflap --disable-libssp --disable-libatomic    \
+              --disable-multilib --disable-bootstrap --disable-libquadmath \
+			  --disable-nls
+GCC_HOST    = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
 
-gdc11: $(GDC11)
-$(GDC11):
-	$(MAKE) $(REF)/$(GCC11)/README.md
-	mkdir -p $(TMP)/gdc11 ; cd $(TMP)/gdc11                                ;\
-	$(REF)/$(GCC11)/configure $(CFG_GDC11)                                &&\
-	$(MAKE) -j$(CORES) all-gcc && sudo $(MAKE) install-gcc                &&\
-	$(MAKE) -j$(CORES) all-target-libphobos && sudo $(MAKE) install-target-libphobos
+CFG_GCC0 = $(CFG_BINUTILS0) $(WITH_GCCLIBS) --enable-languages="c"          \
+           --without-headers --with-newlib                                  \
+		   $(GCC_DISABLE) --disable-threads
+CFG_GCCH = --prefix=/usr/local $(WITH_GCCLIBS) --enable-languages="c,c++,d" \
+           --program-suffix="-host" $(OPT_HOST)                             \
+		   $(GCC_DISABLE) --enable-threads
+CFG_GCC1 = $(CFG_BINUTILS1) $(WITH_GCCLIBS) --enable-languages="c,d"        \
+           --with-headers=$(ROOT)/usr/include $(GCC_HOST)                   \
+           $(GCC_DISABLE) --enable-threads
+
+gcch: $(GDCH)
+$(GDCH):
+	$(MAKE) $(REF)/$(GCC)/README.md
+	mkdir -p $(TMP)/$(GCC)-host ; cd $(TMP)/$(GCC)-host  ;\
+	$(REF)/$(GCC)/configure $(CFG_GCCH)                 &&\
+	$(MAKE) -j$(CORES) && sudo $(MAKE) install
 
 gcc0: $(HOST)/bin/$(TARGET)-gcc
 $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
@@ -195,9 +195,9 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 
 gcc1: $(HOST)/bin/$(TARGET)-gdc
 $(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
-                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDC11)
-	mkdir -p $(TMP)/gcc1 ; cd $(TMP)/gcc1                                  ;\
-	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1) GDC=$(GDC11)           &&\
+                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
+	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                          ;\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)             &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 	touch $@
 
@@ -272,7 +272,7 @@ install: doc gz $(ETC_APT)
 	$(MAKE) update
 update:
 	sudo apt update
-	sudo apt install -yu `cat apt.txt`
+	sudo apt install -yu `cat apt.$(OS)`
 $(APT_SRC)/%: tmp/%
 	sudo cp $< $@
 tmp/d-apt.list:
