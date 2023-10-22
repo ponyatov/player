@@ -38,6 +38,7 @@ MPFR_VER     = 4.2.1
 MPC_VER      = 1.3.1
 SYSLINUX_VER = 6.03
 LINUX_VER    = 6.5.6
+ICONV_VER    = 1.17
 UCLIBC_VER   = 1.0.44
 BUSYBOX_VER  = 1.36.1
 
@@ -53,6 +54,7 @@ MPFR        = mpfr-$(MPFR_VER)
 MPC         = mpc-$(MPC_VER)
 SYSLINUX    = syslinux-$(SYSLINUX_VER)
 LINUX       = linux-$(LINUX_VER)
+ICONV       = libiconv-$(ICONV_VER)
 UCLIBC      = uClibc-ng-$(UCLIBC_VER)
 BUSYBOX     = busybox-$(BUSYBOX_VER)
 ##
@@ -63,6 +65,7 @@ MPFR_GZ     = $(MPFR).tar.xz
 MPC_GZ      = $(MPC).tar.gz
 SYSLINUX_GZ = $(SYSLINUX).tar.xz
 LINUX_GZ    = $(LINUX).tar.xz
+ICONV_GZ    = $(ICONV).tar.gz
 UCLIBC_GZ   = $(UCLIBC).tar.xz
 BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
 
@@ -163,7 +166,7 @@ $(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
 GCC_DISABLE = --disable-shared --disable-decimal-float --disable-libgomp   \
               --disable-libmudflap --disable-libssp --disable-libatomic    \
               --disable-multilib --disable-bootstrap --disable-libquadmath \
-			  --disable-nls --disable-libstdcxx-pch
+			  --disable-nls --disable-libstdcxx-pch --disable-clocale
 GCC_ENABLE  = --enable-threads
 GCC_HOST    = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
 
@@ -210,21 +213,32 @@ gcc1: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md    \
 
 .PHONY: linux
 
-KMAKE  = $(XPATH) make -C $(REF)/$(LINUX) O=$(TMP)/linux \
+KMAKE  = $(XPATH) make -C $(REF)/$(LINUX) O=$(TMP)/$(LINUX) \
          ARCH=$(ARCH) CROSS_COMPILE=$(TARGET)- \
          INSTALL_MOD_PATH=$(ROOT) INSTALL_HDR_PATH=$(ROOT)/usr
-KONFIG = $(TMP)/linux/.config
+KONFIG = $(TMP)/$(LINUX)/.config
 
 linux: $(REF)/$(LINUX)/README.md
-	mkdir -p $(TMP)/linux ; rm $(KONFIG) ; $(KMAKE) allnoconfig &&\
-	cat $(CWD)/all/all.kernel $(CWD)/arch/$(ARCH).kernel          \
-		$(CWD)/cpu/$(CPU).kernel $(CWD)/hw/$(HW).kernel           \
-		$(CWD)/app/$(APP).kernel                   >> $(KONFIG) &&\
-	echo CONFIG_LOCALVERSION=\"-$(APP)@$(HW)\"     >> $(KONFIG) &&\
-	echo CONFIG_DEFAULT_HOSTNAME=\"$(APP)\"        >> $(KONFIG) &&\
-	$(KMAKE)            menuconfig                              &&\
-	$(KMAKE) -j$(CORES) bzImage modules                         &&\
+	mkdir -p $(TMP)/$(LINUX) ; rm $(KONFIG) ; $(KMAKE) allnoconfig &&\
+	cat $(CWD)/all/all.kernel $(CWD)/arch/$(ARCH).kernel             \
+		$(CWD)/cpu/$(CPU).kernel $(CWD)/hw/$(HW).kernel              \
+		$(CWD)/app/$(APP).kernel                   >> $(KONFIG)    &&\
+	echo CONFIG_LOCALVERSION=\"-$(APP)@$(HW)\"     >> $(KONFIG)    &&\
+	echo CONFIG_DEFAULT_HOSTNAME=\"$(APP)\"        >> $(KONFIG)    &&\
+	$(KMAKE)            menuconfig                                 &&\
+	$(KMAKE) -j$(CORES) bzImage modules                            &&\
 	$(KMAKE)            modules_install headers_install && $(MAKE) fw
+
+.PHONY: iconv
+
+iconv: $(HOST)/bin/iconv
+$(HOST)/bin/iconv: $(REF)/$(ICONV)/configure
+	mkdir -p $(TMP)/$(ICONV) ; cd $(TMP)/$(ICONV)           ;\
+	$(REF)/$(ICONV)/$(CFG_HOST) && $(MAKE) -j$(CORES) && $(MAKE) install
+$(REF)/$(ICONV)/configure: $(REF)/$(ICONV)/gnulib/README
+	cd $(REF)/$(ICONV) ; ./autogen.sh
+$(REF)/$(ICONV)/gnulib/README: $(REF)/$(ICONV)/README.md
+	cd $(REF)/$(ICONV) ; ./gitsub.sh pull --depth 1
 
 .PHONY: uclibc
 
@@ -291,7 +305,7 @@ gz: $(LDC2) \
 	$(GZ)/$(GMP_GZ) $(GZ)/$(MPFR_GZ) $(GZ)/$(MPC_GZ)         \
 	$(GZ)/$(BINUTILS_GZ) $(GZ)/$(GCC_GZ)                     \
 	$(GZ)/$(LINUX_GZ) $(GZ)/$(UCLIBC_GZ) $(GZ)/$(BUSYBOX_GZ) \
-	$(GZ)/$(SYSLINUX_GZ)
+	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ)
 
 $(LDC2): $(GZ)/$(LDC_GZ)
 	cd /opt ; sudo sh -c "xzcat $< | tar x && touch $@"
@@ -328,6 +342,9 @@ $(GZ)/$(BUSYBOX_GZ):
 
 $(GZ)/$(SYSLINUX_GZ):
 	$(CURL) $@ https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/$(SYSLINUX_GZ)
+
+$(GZ)/$(ICONV_GZ):
+	$(CURL) $@ https://github.com/roboticslibrary/libiconv/archive/refs/tags/v$(ICONV_VER).tar.gz
 
 # merge
 MERGE += README.md Makefile apt.Linux

@@ -15,7 +15,7 @@ class MediaFile {
     }
 
     void play() {
-        writeln(filename);
+        writeln(this);
     }
 
     override string toString() const {
@@ -70,6 +70,15 @@ class MP3 : MediaFile {
 class MP4 : MediaFile {
     this(string filename) {
         super(filename);
+    }
+
+    AVFormatContext* pFormatCtx = null;
+    override void play() {
+        super.play();
+        assert(avformat_open_input(&pFormatCtx,
+                filename.toStringz, null, null) == 0);
+        writefln("%s",pFormatCtx.iformat.name.fromStringz);
+        assert(avformat_find_stream_info(pFormatCtx, null)>=0);
     }
 }
 
