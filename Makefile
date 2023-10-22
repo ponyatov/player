@@ -261,11 +261,15 @@ $(REF)/$(ICONV)/gnulib/README: $(REF)/$(ICONV)/README.md
 
 MMAKE    = $(XPATH) make -C $(REF)/$(MUSL) O=$(TMP)/$(MUSL) \
            ARCH=$(ARCH) PREFIX=$(ROOT)
-CFG_MUSL = --prefix=$(ROOT)/musl TARGET=$(TARGET)
+CFG_MUSL = --prefix=$(ROOT) --exec-prefix=$(ROOT)/musl/exec \
+		   --includedir=$(ROOT)/include --syslibdir=$(ROOT)/lib \
+           --target=$(TARGET) CROSS_COMPILE=$(TARGET)- \
+		   --enable-optimize CFLAGS="-I$(ROOT)/usr/include -O3 -march=$(CPU) -mtune=generic"
 
 musl: $(REF)/$(MUSL)/README.md
-	mkdir -p $(TMP)/$(MUSL) ; cd $(TMP)/$(MUSL)           ;\
-	$(XPATH) $(REF)/$(MUSL)/configure $(CFG_MUSL)
+	mkdir -p $(TMP)/$(MUSL) ; cd $(TMP)/$(MUSL)              ;\
+	$(XPATH) $(REF)/$(MUSL)/configure $(CFG_MUSL)           &&\
+	$(XPATH) $(MAKE) -j$(CORES) && $(XPATH) $(MAKE) install
 
 .PHONY: uclibc
 
