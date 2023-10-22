@@ -77,8 +77,8 @@ class MP4 : MediaFile {
         super.play();
         assert(avformat_open_input(&pFormatCtx,
                 filename.toStringz, null, null) == 0);
-        writefln("%s",pFormatCtx.iformat.name.fromStringz);
-        assert(avformat_find_stream_info(pFormatCtx, null)>=0);
+        writefln("%s", pFormatCtx.iformat.name.fromStringz);
+        assert(avformat_find_stream_info(pFormatCtx, null) >= 0);
     }
 }
 

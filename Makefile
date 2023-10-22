@@ -94,8 +94,8 @@ KERNEL   = $(FW)/$(APP)_$(HW).kernel
 INITRD   = $(FW)/$(APP)_$(HW).cpio.gz
 
 # src
-D += $(wildcard src/*.d*)
-C += $(wildcard src/*.c*)
+D += $(wildcard src/*.d*) $(wildcard init/*.d*)
+C += $(wildcard src/*.c*) $(wildcard init/*.c*)
 
 # all
 .PHONY: all
@@ -112,9 +112,9 @@ $(INITRD):
 
 .PHONY: qemu
 qemu: $(KERNEL) $(INITRD)
-	xterm -e $(QEMU) $(QEMU_CFG) -nographic \
+	xterm -e $(QEMU) $(QEMU_CFG) \
 		-kernel $(KERNEL) -initrd $(INITRD) \
-		-append "console=ttyS0,115200"
+			-nographic -append "console=ttyS0,115200"
 
 # format
 format: tmp/format_c tmp/format_d
@@ -124,9 +124,12 @@ tmp/format_d: $(D)
 	dub run dfmt -- -i $? && touch $@
 
 # clean
+.PHONY: distclean
+distclean:
+	rm -rf host root ; git checkout host root
+	$(MAKE) clean
 .PHONY: clean
 clean:
-	rm -rf host root ; git checkout host root
 	rm -rf $(TMP)/$(BINUTILS)-* $(TMP)/$(GCC)-*
 	rm -rf $(TMP)/$(GMP)-* $(TMP)/$(MPFR)-* $(TMP)/$(MPC)-*
 	rm -rf $(TMP)/$(LINUX) $(TMP)/$(MUSL) $(TMP)/$(UCLIBC) $(TMP)/$(ICONV)
@@ -138,7 +141,8 @@ OPT_HOST   = CFLAGS="$(OPT_NATIVE)" CXXFLAGS="$(OPT_NATIVE)"
 .PHONY:   gcclibs0 gmp0 mpfr0 mpc0
 gcclibs0: gmp0 mpfr0 mpc0
 
-WITH_GCCLIBS = --with-gmp=$(HOST) --with-mpfr=$(HOST) --with-mpc=$(HOST)
+WITH_GCCLIBS = --with-gmp=$(HOST) --with-mpfr=$(HOST) \
+               --with-mpc=$(HOST) --with-isl=$(HOST)
 CFG_GCCLIBS0 = $(WITH_GCCLIBS) --disable-shared $(OPT_HOST)
 
 gmp0: $(HOST)/lib/libgmp.a
@@ -167,7 +171,7 @@ $(HOST)/lib/libisl.a: $(HOST)/lib/libgmp.a $(REF)/$(ISL)/README.md
 
 .PHONY: binutils0 gcc0 binutils1 gcc1
 
-CFG_BINUTILS0 = --disable-nls $(OPT_HOST)                 \
+CFG_BINUTILS0 = --disable-nls $(OPT_HOST) $(WITH_GCCLIBS) \
                 --target=$(TARGET) --with-sysroot=$(ROOT) \
                 --disable-multilib --disable-bootstrap
 CFG_BINUTILS1 = $(CFG_BINUTILS0) --enable-lto
@@ -179,7 +183,7 @@ $(HOST)/bin/$(TARGET)-ld: $(REF)/$(BINUTILS)/README.md
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 binutils1: $(HOST)/bin/$(TARGET)-as
-$(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
+$(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so
 	mkdir -p $(TMP)/$(BINUTILS)-1 ; cd $(TMP)/$(BINUTILS)-1 ;\
 	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS1) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
@@ -220,7 +224,7 @@ gcc1: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md    \
       $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
 	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                             ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                           &&\
-	$(MAKE) -j$(CORES)     all-target-libphobos
+	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc 
 # $(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
 # $(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
 # $(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
@@ -262,7 +266,7 @@ $(REF)/$(ICONV)/gnulib/README: $(REF)/$(ICONV)/README.md
 MMAKE    = $(XPATH) make -C $(REF)/$(MUSL) O=$(TMP)/$(MUSL) \
            ARCH=$(ARCH) PREFIX=$(ROOT)
 CFG_MUSL = --prefix=$(ROOT) --exec-prefix=$(ROOT)/musl/exec \
-		   --includedir=$(ROOT)/include --syslibdir=$(ROOT)/lib \
+		   --includedir=$(ROOT)/usr/include --syslibdir=$(ROOT)/lib \
            --target=$(TARGET) CROSS_COMPILE=$(TARGET)- \
 		   --enable-optimize CFLAGS="-I$(ROOT)/usr/include -O3 -march=$(CPU) -mtune=generic"
 
@@ -270,6 +274,7 @@ musl: $(REF)/$(MUSL)/README.md
 	mkdir -p $(TMP)/$(MUSL) ; cd $(TMP)/$(MUSL)              ;\
 	$(XPATH) $(REF)/$(MUSL)/configure $(CFG_MUSL)           &&\
 	$(XPATH) $(MAKE) -j$(CORES) && $(XPATH) $(MAKE) install
+	git checkout root/sbin/ldd root/lib/ld-musl-$(ARCH).so.1
 
 .PHONY: uclibc
 
