@@ -165,7 +165,7 @@ CFG_GCC0      = $(CFG_BINUTILS0) $(WITH_GCCLIBS)                            \
                 --disable-libmudflap --disable-libssp --disable-libatomic   \
                 --disable-libquadmath --disable-threads
 CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                            \
-                --with-headers=$(ROOT)/usr/include --enable-languages="c,c++,d" \
+                --with-headers=$(ROOT)/usr/include --enable-languages="c,d" \
                 --disable-shared --disable-decimal-float --disable-libgomp  \
                 --disable-libmudflap --disable-libssp --disable-libatomic   \
                 --disable-libquadmath --enable-threads
