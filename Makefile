@@ -90,7 +90,7 @@ C += $(wildcard src/*.c*)
 # all
 .PHONY: all
 all: $(D)
-	dub run -- media/park.mp4 media/dwsample1.mp3
+	dub run -- root/media/park.mp4 root/media/dwsample1.mp3
 
 .PHONY: fw
 fw: $(KERNEL) $(INITRD)
@@ -163,7 +163,7 @@ $(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
 GCC_DISABLE = --disable-shared --disable-decimal-float --disable-libgomp   \
               --disable-libmudflap --disable-libssp --disable-libatomic    \
               --disable-multilib --disable-bootstrap --disable-libquadmath \
-			  --disable-nls
+			  --disable-nls --disable-libstdcxx-pch
 GCC_ENABLE  = --enable-threads
 GCC_HOST    = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
 
@@ -193,15 +193,20 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
 	touch $@
 
-gcc1: $(HOST)/bin/$(TARGET)-gdc
-$(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md       \
-                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
-	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                                ;\
-	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                              &&\
-	$(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc              &&\
-	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc    &&\
-	$(MAKE) -j$(CORES) all-target-libphobos && $(MAKE) install-target-libphobos &&\
-	sync
+gcc1: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md    \
+      $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
+	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                             ;\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                           &&\
+	$(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
+	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
+	$(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
+	$(MAKE)            install-target-libstdc++-v3
+# $(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
+# $(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
+# $(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
+# $(MAKE)            install-target-libstdc++-v3                           &&\
+# $(MAKE) -j$(CORES)     all-target-libphobos                              &&\
+# $(MAKE)            install-target-libphobos
 
 .PHONY: linux
 

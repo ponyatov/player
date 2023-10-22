@@ -18,7 +18,7 @@ class MediaFile {
         writeln(filename);
     }
 
-    override string toString() {
+    override string toString() const {
         return format("%s(%s)", this.classinfo.name, filename);
     }
 }
