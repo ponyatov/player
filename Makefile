@@ -47,6 +47,7 @@ LDC_GZ      = $(LDC_OS).tar.xz
 ##
 BINUTILS    = binutils-$(BINUTILS_VER)
 GCC         = gcc-$(GCC_VER)
+GCC11       = gcc-11.4.0
 GMP         = gmp-$(GMP_VER)
 MPFR        = mpfr-$(MPFR_VER)
 MPC         = mpc-$(MPC_VER)
@@ -66,10 +67,11 @@ UCLIBC_GZ   = $(UCLIBC).tar.xz
 BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
 
 # tool
-CURL = curl -L -o
-LLC  = llc-15
-LDC2 = /opt/$(LDC_OS)/bin/ldc2
-QEMU = qemu-system-$(ARCH)
+CURL  = curl -L -o
+GDC11 = /usr/local/bin/gdc-11
+LLC   = llc-15
+LDC2  = /opt/$(LDC_OS)/bin/ldc2
+QEMU  = qemu-system-$(ARCH)
 
 # cfg
 XPATH    = PATH=$(HOST)/bin:$(PATH)
@@ -165,7 +167,21 @@ CFG_GCC1      = $(CFG_BINUTILS1) $(WITH_GCCLIBS)                            \
                 --with-headers=$(ROOT)/usr/include --enable-languages="c,c++,d" \
                 --disable-shared --disable-decimal-float --disable-libgomp  \
                 --disable-libmudflap --disable-libssp --disable-libatomic   \
-                --disable-libquadmath --enable-threads --disable-libphobos
+                --disable-libquadmath --enable-threads
+CFG_GDC11     = --disable-nls $(OPT_HOST) --prefix=/usr/local               \
+                --disable-multilib --disable-bootstrap $(WITH_GCCLIBS)      \
+                --program-suffix="-11" --enable-languages="d"               \
+                --disable-shared --disable-decimal-float --disable-libgomp  \
+                --disable-libmudflap --disable-libssp --disable-libatomic   \
+                --disable-libquadmath --enable-threads
+
+gdc11: $(GDC11)
+$(GDC11):
+	$(MAKE) $(REF)/$(GCC11)/README.md
+	mkdir -p $(TMP)/gdc11 ; cd $(TMP)/gdc11                                ;\
+	$(REF)/$(GCC11)/configure $(CFG_GDC11)                                &&\
+	$(MAKE) -j$(CORES) all-gcc && sudo $(MAKE) install-gcc                &&\
+	$(MAKE) -j$(CORES) all-target-libphobos && sudo $(MAKE) install-target-libphobos
 
 gcc0: $(HOST)/bin/$(TARGET)-gcc
 $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
@@ -178,11 +194,12 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 
 gcc1: $(HOST)/bin/$(TARGET)-g++
 $(HOST)/bin/$(TARGET)-g++: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
-                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
+                           $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDC11)
 	mkdir -p $(TMP)/gcc1 ; cd $(TMP)/gcc1                                  ;\
-	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                        &&\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1) GDC=$(GDC11)           &&\
 	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
+	$(MAKE) -j$(CORES) all-target-libphobos && sudo $(MAKE) install-target-libphobos
 	touch $@
 
 .PHONY: linux
