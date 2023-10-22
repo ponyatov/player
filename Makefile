@@ -119,6 +119,14 @@ tmp/format_c: $(C)
 tmp/format_d: $(D)
 	dub run dfmt -- -i $? && touch $@
 
+# clean
+.PHONY: clean
+clean:
+	rm -rf host root ; git checkout host root
+	rm -rf $(TMP)/$(BINUTILS)-* $(TMP)/$(GCC)-*
+	rm -rf $(TMP)/$(GMP)-* $(TMP)/$(MPFR)-* $(TMP)/$(MPC)-*
+	rm -rf $(TMP)/$(LINUX) $(TMP)/$(MUSL) $(TMP)/$(UCLIBC) $(TMP)/$(ICONV)
+
 # cross
 OPT_NATIVE = -O3 -march=native -mtune=native
 OPT_HOST   = CFLAGS="$(OPT_NATIVE)" CXXFLAGS="$(OPT_NATIVE)"
@@ -131,19 +139,19 @@ CFG_GCCLIBS0 = $(WITH_GCCLIBS) --disable-shared $(OPT_HOST)
 
 gmp0: $(HOST)/lib/libgmp.a
 $(HOST)/lib/libgmp.a: $(REF)/$(GMP)/README
-	mkdir -p $(TMP)/gmp0 ; cd $(TMP)/gmp0 ;\
+	mkdir -p $(TMP)/$(GMP)-0 ; cd $(TMP)/$(GMP)-0 ;\
 	$(REF)/$(GMP)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 mpfr0: $(HOST)/lib/libmpfr.a
 $(HOST)/lib/libmpfr.a: $(HOST)/lib/libgmp.a $(REF)/$(MPFR)/README.md
-	mkdir -p $(TMP)/mpfr0 ; cd $(TMP)/mpfr0 ;\
+	mkdir -p $(TMP)/$(MPFR)-0 ; cd $(TMP)/$(MPFR)-0 ;\
 	$(REF)/$(MPFR)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 mpc0: $(HOST)/lib/libmpc.a
 $(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
-	mkdir -p $(TMP)/mpc0 ; cd $(TMP)/mpc0 ;\
+	mkdir -p $(TMP)/$(MPC)-0 ; cd $(TMP)/$(MPC)-0 ;\
 	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
@@ -156,13 +164,13 @@ CFG_BINUTILS1 = $(CFG_BINUTILS0) --enable-lto
 
 binutils0: $(HOST)/bin/$(TARGET)-ld
 $(HOST)/bin/$(TARGET)-ld: $(REF)/$(BINUTILS)/README.md
-	mkdir -p $(TMP)/binutils0 ; cd $(TMP)/binutils0 ;\
+	mkdir -p $(TMP)/$(BINUTILS)-0 ; cd $(TMP)/$(BINUTILS)-0 ;\
 	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
 binutils1: $(HOST)/bin/$(TARGET)-as
 $(HOST)/bin/$(TARGET)-as: $(ROOT)/lib/libc.so.0
-	mkdir -p $(TMP)/binutils1 ; cd $(TMP)/binutils1 ;\
+	mkdir -p $(TMP)/$(BINUTILS)-1 ; cd $(TMP)/$(BINUTILS)-1 ;\
 	$(XPATH) $(REF)/$(BINUTILS)/$(CFG_HOST) $(CFG_BINUTILS1) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
@@ -239,6 +247,16 @@ $(REF)/$(ICONV)/configure: $(REF)/$(ICONV)/gnulib/README
 	cd $(REF)/$(ICONV) ; ./autogen.sh
 $(REF)/$(ICONV)/gnulib/README: $(REF)/$(ICONV)/README.md
 	cd $(REF)/$(ICONV) ; ./gitsub.sh pull --depth 1
+
+.PHONY: musl
+
+MMAKE    = $(XPATH) make -C $(REF)/$(MUSL) O=$(TMP)/$(MUSL) \
+           ARCH=$(ARCH) PREFIX=$(ROOT)
+CFG_MUSL = --prefix=$(ROOT)/musl TARGET=$(TARGET)
+
+musl: $(REF)/$(MUSL)/README.md
+	mkdir -p $(TMP)/$(MUSL) ; cd $(TMP)/$(MUSL)           ;\
+	$(XPATH) $(REF)/$(MUSL)/configure $(CFG_MUSL)
 
 .PHONY: uclibc
 
