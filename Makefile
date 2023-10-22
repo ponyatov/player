@@ -224,13 +224,12 @@ gcc1: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md    \
       $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
 	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                             ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                           &&\
-	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc 
-# $(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
-# $(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
-# $(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
-# $(MAKE)            install-target-libstdc++-v3                           &&\
-# $(MAKE) -j$(CORES)     all-target-libphobos                              &&\
-# $(MAKE)            install-target-libphobos
+	$(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
+	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
+	$(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
+	$(MAKE)            install-target-libstdc++-v3                           &&\
+	$(MAKE) -j$(CORES)     all-target-libphobos                              &&\
+	$(MAKE)            install-target-libphobos
 
 .PHONY: linux
 
