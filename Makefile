@@ -32,6 +32,7 @@ LDC_VER      = 1.32.0
 ## LDC_VER   = 1.34.0 debian 12 libc 2.29 since 1.32.1
 BINUTILS_VER = 2.41
 GCC_VER      = 13.2.0
+GCC_VER      = 12.3.0
 GMP_VER      = 6.2.1
 MPFR_VER     = 4.2.1
 MPC_VER      = 1.3.1
@@ -192,14 +193,12 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
 	touch $@
 
-gcc1: $(HOST)/bin/$(TARGET)-g++
-$(HOST)/bin/$(TARGET)-g++: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
+gcc1: $(HOST)/bin/$(TARGET)-gdc
+$(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
                            $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDC11)
 	mkdir -p $(TMP)/gcc1 ; cd $(TMP)/gcc1                                  ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1) GDC=$(GDC11)           &&\
-	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
-	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
-	$(MAKE) -j$(CORES) all-target-libphobos && sudo $(MAKE) install-target-libphobos
+	$(MAKE) -j$(CORES) && $(MAKE) install
 	touch $@
 
 .PHONY: linux
