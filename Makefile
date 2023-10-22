@@ -194,12 +194,14 @@ $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
 	touch $@
 
 gcc1: $(HOST)/bin/$(TARGET)-gdc
-$(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
+$(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md       \
                            $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
-	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                          ;\
-	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                        &&\
-	$(MAKE) -j$(CORES) && $(MAKE) install
-	touch $@
+	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                                ;\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                              &&\
+	$(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc              &&\
+	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc    &&\
+	$(MAKE) -j$(CORES) all-target-libphobos && $(MAKE) install-target-libphobos &&\
+	sync
 
 .PHONY: linux
 
@@ -221,12 +223,12 @@ linux: $(REF)/$(LINUX)/README.md
 
 .PHONY: uclibc
 
-UMAKE  = $(XPATH) make -C $(REF)/$(UCLIBC) O=$(TMP)/uclibc \
+UMAKE  = $(XPATH) make -C $(REF)/$(UCLIBC) O=$(TMP)/$(UCLIBC) \
          ARCH=$(ARCH) PREFIX=$(ROOT)
-UONFIG = $(TMP)/uclibc/.config
+UONFIG = $(TMP)/$(UCLIBC)/.config
 
 uclibc: $(REF)/$(UCLIBC)/README.md
-	mkdir -p $(TMP)/uclibc ; cd $(TMP)/uclibc                 ;\
+	mkdir -p $(TMP)/$(UCLIBC) ; cd $(TMP)/$(UCLIBC)           ;\
 	rm -f $(UONFIG) ; $(UMAKE) allnoconfig                   &&\
 	cat $(CWD)/all/all.uclibc $(CWD)/arch/$(ARCH).uclibc       \
 	    $(CWD)/cpu/$(CPU).uclibc $(CWD)/hw/$(HW).uclibc        \
@@ -242,8 +244,10 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 
 .PHONY: init
 init: $(ROOT)/init
-$(ROOT)/%: src/%.c Makefile
-	$(XPATH) $(TARGET)-gcc -o $@ $< && file $@ && $(HOST)/bin/ldd $@
+# $(ROOT)/%: src/%.c Makefile
+# 	$(XPATH) $(TARGET)-gcc -o $@ $< && file $@ && $(HOST)/bin/ldd $@
+$(ROOT)/%: src/%.d Makefile
+	$(XPATH) $(TARGET)-gdc -o $@ $< && file $@ && $(HOST)/bin/ldd $@
 
 # rule
 $(REF)/%/README.md: $(GZ)/%.tar.xz
