@@ -31,9 +31,8 @@ FW   =  $(CWD)/fw
 LDC_VER      = 1.32.0
 ## LDC_VER   = 1.34.0 debian 12 libc 2.29 since 1.32.1
 BINUTILS_VER = 2.41
-GCC_VER      = 13.2.0
-# GCC_VER      = 12.3.0
-# GCC_VER      = 11.4.0
+# GCC_VER      = 13.2.0
+GCC_VER      = 12.3.0
 GMP_VER      = 6.2.1
 MPFR_VER     = 4.2.1
 MPC_VER      = 1.3.1
@@ -69,9 +68,9 @@ BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
 
 # tool
 CURL = curl -L -o
-GDCH = /usr/local/bin/gdc-host
-CCH  = /usr/local/bin/gcc-host
-CXXH = /usr/local/bin/g++-host
+GDCH = /usr/local/bin/gdc-12
+CCH  = /usr/local/bin/gcc-12
+CXXH = /usr/local/bin/g++-12
 LLC  = llc-15
 LDC2 = /opt/$(LDC_OS)/bin/ldc2
 QEMU = qemu-system-$(ARCH)
@@ -165,17 +164,18 @@ GCC_DISABLE = --disable-shared --disable-decimal-float --disable-libgomp   \
               --disable-libmudflap --disable-libssp --disable-libatomic    \
               --disable-multilib --disable-bootstrap --disable-libquadmath \
 			  --disable-nls
+GCC_ENABLE  = --enable-threads
 GCC_HOST    = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
 
-CFG_GCC0 = $(CFG_BINUTILS0) $(WITH_GCCLIBS) --enable-languages="c"          \
-           --without-headers --with-newlib                                  \
-		   $(GCC_DISABLE) --disable-threads
+CFG_GCC0 = $(CFG_BINUTILS0)    $(WITH_GCCLIBS) --enable-languages="c"       \
+           --without-headers --with-newlib --disable-threads $(GCC_HOST)    \
+		   $(GCC_DISABLE)
+CFG_GCC1 = $(CFG_BINUTILS1)    $(WITH_GCCLIBS) --enable-languages="c,c++,d" \
+           --with-headers=$(ROOT)/usr/include                $(GCC_HOST)    \
+           $(GCC_DISABLE) $(GCC_ENABLE)
 CFG_GCCH = --prefix=/usr/local $(WITH_GCCLIBS) --enable-languages="c,c++,d" \
-           --program-suffix="-host" $(OPT_HOST)                             \
-		   $(GCC_DISABLE) --enable-threads
-CFG_GCC1 = $(CFG_BINUTILS1) $(WITH_GCCLIBS) --enable-languages="c,d"        \
-           --with-headers=$(ROOT)/usr/include $(GCC_HOST)                   \
-           $(GCC_DISABLE) --enable-threads
+           --program-suffix="-12"                            $(OPT_HOST)    \
+		   $(GCC_DISABLE) $(GCC_ENABLE)
 
 gcch: $(GDCH)
 $(GDCH):
@@ -187,9 +187,9 @@ $(GDCH):
 gcc0: $(HOST)/bin/$(TARGET)-gcc
 $(HOST)/bin/$(TARGET)-gcc: $(HOST)/bin/$(TARGET)-ld $(REF)/$(GCC)/README.md \
                            $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a
-	mkdir -p $(TMP)/gcc0 ; cd $(TMP)/gcc0                                  ;\
+	mkdir -p $(TMP)/$(GCC)-0 ; cd $(TMP)/$(GCC)-0                          ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC0)                        &&\
-	$(MAKE) -j$(CORES) all-gcc && $(MAKE) install-gcc                     &&\
+	$(MAKE) -j$(CORES) all-gcc           && $(MAKE) install-gcc           &&\
 	$(MAKE) -j$(CORES) all-target-libgcc && $(MAKE) install-target-libgcc &&\
 	touch $@
 
@@ -197,7 +197,7 @@ gcc1: $(HOST)/bin/$(TARGET)-gdc
 $(HOST)/bin/$(TARGET)-gdc: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md \
                            $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
 	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                          ;\
-	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)             &&\
+	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                        &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 	touch $@
 
