@@ -36,6 +36,7 @@ GCC_VER      = 12.3.0
 GMP_VER      = 6.2.1
 MPFR_VER     = 4.2.1
 MPC_VER      = 1.3.1
+ISL_VER      = 0.24
 SYSLINUX_VER = 6.03
 LINUX_VER    = 6.5.6
 ICONV_VER    = 1.17
@@ -53,6 +54,7 @@ GCC         = gcc-$(GCC_VER)
 GMP         = gmp-$(GMP_VER)
 MPFR        = mpfr-$(MPFR_VER)
 MPC         = mpc-$(MPC_VER)
+ISL         = isl-$(ISL_VER)
 SYSLINUX    = syslinux-$(SYSLINUX_VER)
 LINUX       = linux-$(LINUX_VER)
 ICONV       = libiconv-$(ICONV_VER)
@@ -65,6 +67,7 @@ GCC_GZ      = $(GCC).tar.xz
 GMP_GZ      = $(GMP).tar.gz
 MPFR_GZ     = $(MPFR).tar.xz
 MPC_GZ      = $(MPC).tar.gz
+ISL_GZ      = $(ISL).tar.bz2
 SYSLINUX_GZ = $(SYSLINUX).tar.xz
 LINUX_GZ    = $(LINUX).tar.xz
 ICONV_GZ    = $(ICONV).tar.gz
@@ -83,7 +86,8 @@ QEMU = qemu-system-$(ARCH)
 
 # cfg
 XPATH    = PATH=$(HOST)/bin:$(PATH)
-CFG_HOST = configure --prefix=$(HOST)
+GCC_HOST = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
+CFG_HOST = configure --prefix=$(HOST) $(GCC_HOST)
 
 BZIMAGE  = tmp/$(LINUX)/arch/x86/boot/bzImage
 KERNEL   = $(FW)/$(APP)_$(HW).kernel
@@ -155,6 +159,12 @@ $(HOST)/lib/libmpc.a: $(HOST)/lib/libgmp.a $(REF)/$(MPC)/README.md
 	$(REF)/$(MPC)/$(CFG_HOST) $(CFG_GCCLIBS0) &&\
 	$(MAKE) -j$(CORES) && $(MAKE) install
 
+isl0: $(HOST)/lib/libisl.a
+$(HOST)/lib/libisl.a: $(HOST)/lib/libgmp.a $(REF)/$(ISL)/README.md
+	mkdir -p $(TMP)/$(ISL)-0 ; cd $(TMP)/$(ISL)-0 ;\
+	$(REF)/$(ISL)/$(CFG_HOST) $(CFG_GCCLIBS0) --with-gmp=system --with-gmp-prefix=$(HOST) &&\
+	$(MAKE) -j$(CORES) && $(MAKE) install
+
 .PHONY: binutils0 gcc0 binutils1 gcc1
 
 CFG_BINUTILS0 = --disable-nls $(OPT_HOST)                 \
@@ -178,8 +188,7 @@ GCC_DISABLE = --disable-shared --disable-decimal-float --disable-libgomp   \
               --disable-libmudflap --disable-libssp --disable-libatomic    \
               --disable-multilib --disable-bootstrap --disable-libquadmath \
 			  --disable-nls --disable-libstdcxx-pch --disable-clocale
-GCC_ENABLE  = --enable-threads
-GCC_HOST    = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
+GCC_ENABLE  = --enable-threads --enable-tls
 
 CFG_GCC0 = $(CFG_BINUTILS0)    $(WITH_GCCLIBS) --enable-languages="c"       \
            --without-headers --with-newlib --disable-threads $(GCC_HOST)    \
@@ -321,9 +330,9 @@ tmp/d-apt.list:
 
 gz: $(LDC2) \
 	$(GZ)/$(GMP_GZ) $(GZ)/$(MPFR_GZ) $(GZ)/$(MPC_GZ)         \
-	$(GZ)/$(BINUTILS_GZ) $(GZ)/$(GCC_GZ)                     \
-	$(GZ)/$(LINUX_GZ) $(GZ)/$(UCLIBC_GZ) $(GZ)/$(BUSYBOX_GZ) \
-	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ) $(GZ)/$(MUSL_GZ)
+	$(GZ)/$(BINUTILS_GZ) $(GZ)/$(GCC_GZ) $(GZ)/$(ISL_GZ)     \
+	$(GZ)/$(LINUX_GZ) $(GZ)/$(UCLIBC_GZ) $(GZ)/$(MUSL_GZ)    \
+	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ) $(GZ)/$(BUSYBOX_GZ)
 
 $(LDC2): $(GZ)/$(LDC_GZ)
 	cd /opt ; sudo sh -c "xzcat $< | tar x && touch $@"
@@ -345,6 +354,8 @@ $(GZ)/$(MPFR_GZ):
 	$(CURL) $@ https://www.mpfr.org/mpfr-current/$(MPFR_GZ)
 $(GZ)/$(MPC_GZ):
 	$(CURL) $@ https://ftp.gnu.org/gnu/mpc/$(MPC_GZ)
+$(GZ)/$(ISL_GZ):
+	$(CURL) $@ https://gcc.gnu.org/pub/gcc/infrastructure/$(ISL_GZ)
 
 $(GZ)/$(BINUTILS_GZ):
 	$(CURL) $@ https://ftp.gnu.org/gnu/binutils/$(BINUTILS_GZ)
