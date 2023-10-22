@@ -114,7 +114,7 @@ $(INITRD):
 qemu: $(KERNEL) $(INITRD)
 	xterm -e $(QEMU) $(QEMU_CFG) \
 		-kernel $(KERNEL) -initrd $(INITRD) \
-			-nographic -append "console=ttyS0,115200"
+		-nographic -append "console=ttyS0,115200 vga=0x318"
 
 # format
 format: tmp/format_c tmp/format_d
