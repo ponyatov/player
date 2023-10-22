@@ -40,6 +40,7 @@ SYSLINUX_VER = 6.03
 LINUX_VER    = 6.5.6
 ICONV_VER    = 1.17
 UCLIBC_VER   = 1.0.44
+MUSL_VER     = 1.2.4
 BUSYBOX_VER  = 1.36.1
 
 # package
@@ -56,6 +57,7 @@ SYSLINUX    = syslinux-$(SYSLINUX_VER)
 LINUX       = linux-$(LINUX_VER)
 ICONV       = libiconv-$(ICONV_VER)
 UCLIBC      = uClibc-ng-$(UCLIBC_VER)
+MUSL        = musl-$(MUSL_VER)
 BUSYBOX     = busybox-$(BUSYBOX_VER)
 ##
 BINUTILS_GZ = $(BINUTILS).tar.xz
@@ -67,6 +69,7 @@ SYSLINUX_GZ = $(SYSLINUX).tar.xz
 LINUX_GZ    = $(LINUX).tar.xz
 ICONV_GZ    = $(ICONV).tar.gz
 UCLIBC_GZ   = $(UCLIBC).tar.xz
+MUSL_GZ     = $(MUSL).tar.gz
 BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
 
 # tool
@@ -82,7 +85,7 @@ QEMU = qemu-system-$(ARCH)
 XPATH    = PATH=$(HOST)/bin:$(PATH)
 CFG_HOST = configure --prefix=$(HOST)
 
-BZIMAGE  = tmp/linux/arch/x86/boot/bzImage
+BZIMAGE  = tmp/$(LINUX)/arch/x86/boot/bzImage
 KERNEL   = $(FW)/$(APP)_$(HW).kernel
 INITRD   = $(FW)/$(APP)_$(HW).cpio.gz
 
@@ -100,7 +103,7 @@ fw: $(KERNEL) $(INITRD)
 $(KERNEL): $(BZIMAGE)
 	cp $< $@
 
-$(INITRD): $(ROOT)/init
+$(INITRD):
 	cd $(ROOT) ; find . -print0 | cpio --null --create --format=newc | gzip -9 > $@
 
 .PHONY: qemu
@@ -200,10 +203,7 @@ gcc1: $(HOST)/bin/$(TARGET)-as $(REF)/$(GCC)/README.md    \
       $(HOST)/lib/libmpfr.a $(HOST)/lib/libmpc.a $(GDCH)
 	mkdir -p $(TMP)/$(GCC)-1 ; cd $(TMP)/$(GCC)-1                             ;\
 	$(XPATH) $(REF)/$(GCC)/$(CFG_HOST) $(CFG_GCC1)                           &&\
-	$(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
-	$(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
-	$(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
-	$(MAKE)            install-target-libstdc++-v3
+	$(MAKE) -j$(CORES)     all-target-libphobos
 # $(MAKE) -j$(CORES) all-gcc              && $(MAKE) install-gcc           &&\
 # $(MAKE) -j$(CORES) all-target-libgcc    && $(MAKE) install-target-libgcc &&\
 # $(MAKE) -j$(CORES)     all-target-libstdc++-v3                           &&\
@@ -305,7 +305,7 @@ gz: $(LDC2) \
 	$(GZ)/$(GMP_GZ) $(GZ)/$(MPFR_GZ) $(GZ)/$(MPC_GZ)         \
 	$(GZ)/$(BINUTILS_GZ) $(GZ)/$(GCC_GZ)                     \
 	$(GZ)/$(LINUX_GZ) $(GZ)/$(UCLIBC_GZ) $(GZ)/$(BUSYBOX_GZ) \
-	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ)
+	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ) $(GZ)/$(MUSL_GZ)
 
 $(LDC2): $(GZ)/$(LDC_GZ)
 	cd /opt ; sudo sh -c "xzcat $< | tar x && touch $@"
@@ -337,6 +337,8 @@ $(GZ)/$(LINUX_GZ):
 	$(CURL) $@ https://cdn.kernel.org/pub/linux/kernel/v6.x/$(LINUX_GZ)
 $(GZ)/$(UCLIBC_GZ):
 	$(CURL) $@ https://downloads.uclibc-ng.org/releases/$(UCLIBC_VER)/$(UCLIBC_GZ)
+$(GZ)/$(MUSL_GZ):
+	$(CURL) $@ https://musl.libc.org/releases/$(MUSL_GZ)
 $(GZ)/$(BUSYBOX_GZ):
 	$(CURL) $@ https://busybox.net/downloads/$(BUSYBOX_GZ)
 
