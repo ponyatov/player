@@ -2,3 +2,6 @@
 /rc
 bin/**
 tmp/**
+fw/**
+root/**
+host/**
