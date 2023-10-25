@@ -82,6 +82,7 @@ CCH  = /usr/local/bin/gcc-12
 CXXH = /usr/local/bin/g++-12
 LLC  = llc-15
 LDC2 = /opt/$(LDC_OS)/bin/ldc2
+LBR  = /opt/$(LDC_OS)/bin/ldc-build-runtime
 QEMU = qemu-system-$(ARCH)
 
 # cfg
@@ -295,6 +296,26 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 	$(UMAKE) -j$(CORES) hostutils &&\
 	$(UMAKE) PREFIX=$(HOST) DEVEL_PREFIX=/ RUNTIME_PREFIX=/ install_hostutils &&\
 	mv $(HOST)/sbin/* $(HOST)/bin/
+
+.PHONY: busybox
+
+BMAKE   = $(XPATH) make -C $(REF)/$(BUSYBOX) O=$(TMP)/$(BUSYBOX) \
+          PREFIX=$(ROOT)
+BCONFIG = $(TMP)/$(BUSYBOX)/.config
+
+busybox: $(REF)/$(BUSYBOX)/README.md
+	mkdir -p $(TMP)/$(BUSYBOX) ; cd $(TMP)/$(BUSYBOX)               ;\
+	rm -f $(BCONFIG) ; $(BMAKE) allnoconfig                        &&\
+	cat $(CWD)/all/all.bb $(CWD)/arch/$(ARCH).bb                     \
+	    $(CWD)/cpu/$(CPU).bb $(CWD)/hw/$(HW).bb                      \
+	    $(CWD)/app/$(APP).bb                         >> $(BCONFIG) &&\
+	echo CONFIG_CROSS_COMPILER_PREFIX=\"$(TARGET)-\" >> $(BCONFIG) &&\
+	$(BMAKE) menuconfig
+
+# https://wiki.dlang.org/Building_LDC_runtime_libraries
+.PHONY: ldc
+ldc: $(LBR) $(LDC2)
+	$< --ldc $(LDC2) --buildDir $(TMP)/$@_runtime --targetSystem $(TARGET)
 
 .PHONY: init
 init: $(ROOT)/init
