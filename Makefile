@@ -108,6 +108,7 @@ fw: $(KERNEL) $(INITRD)
 $(KERNEL): $(BZIMAGE)
 	cp $< $@
 
+.PHONY: $(INITRD)
 $(INITRD):
 	cd $(ROOT) ; find . -print0 | cpio --null --create --format=newc | gzip -9 > $@
 
@@ -311,7 +312,7 @@ busybox: $(REF)/$(BUSYBOX)/README.md
 		$(CWD)/app/$(APP).bb                         >> $(BCONFIG) &&\
 	echo CONFIG_CROSS_COMPILER_PREFIX=\"$(TARGET)-\" >> $(BCONFIG) &&\
 	echo CONFIG_SYSROOT=\"$(ROOT)\"                  >> $(BCONFIG) &&\
-	echo CONFIG_PREFIX=\"$(ROOT)/bb\"                >> $(BCONFIG) &&\
+	echo CONFIG_PREFIX=\"$(ROOT)\"                   >> $(BCONFIG) &&\
 	python3 $(HOST)/bin/bb.py $(BCONFIG)                           &&\
 	$(BMAKE) menuconfig && $(BMAKE) -j$(CORES) && $(BMAKE) install
 
