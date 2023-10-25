@@ -16,6 +16,11 @@ if __name__ == "__main__":
                 cmt.append(i)
     with open(sys.argv[1],'w') as out:
         for j in cmt:
-            print(f'{j}',file=out)
+            try:
+                c=re.findall(r'CONFIG_[A-Z_]+',j)[0]
+                if c not in cfg.keys():
+                    print(f'{j}',file=out)
+            except:
+                print(f'{j}',file=out)
         for i in idx:
             print(f'{i}={cfg[i]}',file=out)
