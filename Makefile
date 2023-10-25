@@ -310,8 +310,10 @@ busybox: $(REF)/$(BUSYBOX)/README.md
 		$(CWD)/cpu/$(CPU).bb $(CWD)/hw/$(HW).bb                      \
 		$(CWD)/app/$(APP).bb                         >> $(BCONFIG) &&\
 	echo CONFIG_CROSS_COMPILER_PREFIX=\"$(TARGET)-\" >> $(BCONFIG) &&\
+	echo CONFIG_SYSROOT=\"$(ROOT)\"                  >> $(BCONFIG) &&\
+	echo CONFIG_PREFIX=\"$(ROOT)/bb\"                >> $(BCONFIG) &&\
 	python3 $(HOST)/bin/bb.py $(BCONFIG)                           &&\
-	$(BMAKE) menuconfig
+	$(BMAKE) menuconfig && $(BMAKE) -j$(CORES) && $(BMAKE) install
 
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
 .PHONY: ldc
