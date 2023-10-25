@@ -300,16 +300,17 @@ uclibc: $(REF)/$(UCLIBC)/README.md
 .PHONY: busybox
 
 BMAKE   = $(XPATH) make -C $(REF)/$(BUSYBOX) O=$(TMP)/$(BUSYBOX) \
-          PREFIX=$(ROOT)
+          PREFIX=$(ROOT) CROSS_COMPILE=$(TARGET)-
 BCONFIG = $(TMP)/$(BUSYBOX)/.config
 
 busybox: $(REF)/$(BUSYBOX)/README.md
 	mkdir -p $(TMP)/$(BUSYBOX) ; cd $(TMP)/$(BUSYBOX)               ;\
 	rm -f $(BCONFIG) ; $(BMAKE) allnoconfig                        &&\
 	cat $(CWD)/all/all.bb $(CWD)/arch/$(ARCH).bb                     \
-	    $(CWD)/cpu/$(CPU).bb $(CWD)/hw/$(HW).bb                      \
-	    $(CWD)/app/$(APP).bb                         >> $(BCONFIG) &&\
+		$(CWD)/cpu/$(CPU).bb $(CWD)/hw/$(HW).bb                      \
+		$(CWD)/app/$(APP).bb                         >> $(BCONFIG) &&\
 	echo CONFIG_CROSS_COMPILER_PREFIX=\"$(TARGET)-\" >> $(BCONFIG) &&\
+	python3 $(HOST)/bin/bb.py $(BCONFIG)                           &&\
 	$(BMAKE) menuconfig
 
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
