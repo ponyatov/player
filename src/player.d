@@ -9,7 +9,9 @@ import sdl_mixer;
 import ffmpeg;
 
 class MediaFile {
+
     string filename;
+
     this(string filename) {
         this.filename = filename;
     }
@@ -24,7 +26,9 @@ class MediaFile {
 }
 
 class PlayList {
+
     MediaFile[] item;
+
     uint current = 0;
 
     PlayList opAppend(MediaFile file) {
@@ -61,16 +65,19 @@ class MP3 : MediaFile {
     Mix_Music* music;
     override void play() {
         super.play;
-        music = Mix_LoadMUS(filename.toStringz);
-        assert(music !is null);
-        Mix_PlayMusic(music, 1);
+        // music = Mix_LoadMUS(filename.toStringz);
+        // assert(music !is null);
+        // Mix_PlayMusic(music, 1);
     }
 }
 
 class MP4 : MediaFile {
+
     this(string filename) {
         super(filename);
     }
+
+    // https://habr.com/ru/articles/137793/    
 
     AVFormatContext* pFormatCtx = null;
     override void play() {
@@ -93,24 +100,32 @@ enum Audio {
     channels = 1
 }
 
-void main(string[] args) {
-    foreach (argc, argv; args.enumerate) {
-        writefln("argv[%d] = <%s>", argc, argv);
-        if (argc > 0) {
-            if (argv.endsWith(".mp3"))
-                playlist ~= new MP3(argv);
-            else if (argv.endsWith(".mp4"))
-                playlist ~= new MP4(argv);
-        }
-    }
-    // 
+void mk_playlist(string[] args) {
+}
+
+void argw(ulong argc, string argv) {
+    writefln("argv[%d] = <%s>", argc, argv);
+}
+
+void init_libs() {
     assert(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO) == 0);
-    scope (exit)
-        SDL_Quit();
     const auto mixer_flags = MIX_INIT_MP3;
     assert(mixer_flags == Mix_Init(mixer_flags));
     assert(Mix_OpenAudio(Audio.freq, Audio.format, Audio.channels, 0) == 0);
     av_register_all();
+}
+
+void main(string[] args) {
+    argw(0, args[0]);
+    foreach (argc, argv; args[1 .. $].enumerate) {
+        argw(argc, argv);
+        if (argv.endsWith(".mp3"))
+            playlist ~= new MP3(argv);
+        else if (argv.endsWith(".mp4"))
+            playlist ~= new MP4(argv);
+    }
+    // 
+    init_libs();
     // 
     auto wmain = SDL_CreateWindow(args[0].toStringz, SDL_WINDOWPOS_UNDEFINED,
             SDL_WINDOWPOS_UNDEFINED, Video.W, Video.H, SDL_WINDOW_SHOWN);
@@ -135,4 +150,5 @@ void main(string[] args) {
             }
         }
     }
+    SDL_Quit();
 }
