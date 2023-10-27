@@ -139,6 +139,7 @@ clean:
 # cross
 OPT_NATIVE = -O3 -march=native -mtune=native
 OPT_HOST   = CFLAGS="$(OPT_NATIVE)" CXXFLAGS="$(OPT_NATIVE)"
+OPT_TARGET = -O3 -march=$(ARCH) -mcpu=$(CPU) -mtune=$(CPU)
 
 .PHONY:   gcclibs0 gmp0 mpfr0 mpc0
 gcclibs0: gmp0 mpfr0 mpc0
@@ -319,7 +320,10 @@ busybox: $(REF)/$(BUSYBOX)/README.md
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
 .PHONY: ldc
 ldc: $(LBR) $(LDC2)
-	$< --ldc $(LDC2) --buildDir $(TMP)/$@_runtime --targetSystem $(TARGET)
+	$(XPATH) CC=$(TARGET)-gcc CXX=$(TARGET)-g++ $< -j$(CORES) --ldc $(LDC2) \
+		--buildDir $(TMP)/$@_$(TARGET)  --targetSystem $(TARGET)              \
+		--dFlags="-mtriple=$(TARGET)"   --cFlags="$(OPT_TARGET)"
+# --ldcSrcDir $(TMP)/$@_src 
 
 .PHONY: init
 init: $(ROOT)/init
