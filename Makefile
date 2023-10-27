@@ -96,7 +96,7 @@ KERNEL   = $(FW)/$(APP)_$(HW).kernel
 INITRD   = $(FW)/$(APP)_$(HW).cpio.gz
 
 # src
-D += $(wildcard src/*.d*) $(wildcard init/*.d*)
+D += $(wildcard src/*.d*) $(wildcard init/*.d*) $(wildcard hello/*.d*)
 C += $(wildcard src/*.c*) $(wildcard init/*.c*)
 
 # all
@@ -105,9 +105,14 @@ all: $(D)
 	dub run --compiler=dmd -- root/media/park.mp4 root/media/dwsample1.mp3
 
 .PHONY: fw
-fw: $(KERNEL) $(INITRD)
+fw: $(KERNEL) $(INITRD) $(ROOT)/bin/hello
 $(KERNEL): $(BZIMAGE)
 	cp $< $@
+
+.PHONY: hello
+hello: $(ROOT)/bin/hello
+$(ROOT)/bin/hello: hello/hello.d
+	ldc2 -mtriple $(TARGET) -mcpu=$(CPU) -of=$@ $<
 
 .PHONY: $(INITRD)
 $(INITRD):
@@ -140,7 +145,7 @@ clean:
 # cross
 OPT_NATIVE = -O3 -march=native -mtune=native
 OPT_HOST   = CFLAGS="$(OPT_NATIVE)" CXXFLAGS="$(OPT_NATIVE)"
-OPT_TARGET = -O3 -march=$(ARCH) -mcpu=$(CPU) -mtune=$(CPU)
+OPT_TARGET = -O2 -march=$(ARCH) -mcpu=$(CPU) -mtune=$(CPU)
 
 .PHONY:   gcclibs0 gmp0 mpfr0 mpc0
 gcclibs0: gmp0 mpfr0 mpc0
@@ -319,12 +324,16 @@ busybox: $(REF)/$(BUSYBOX)/README.md
 	$(BMAKE) menuconfig && $(BMAKE) -j$(CORES) && $(BMAKE) install
 
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
-.PHONY: ldc
-ldc: $(LBR) $(LDC2)
-	$(XPATH) CC=$(TARGET)-gcc CXX=$(TARGET)-g++ $< -j$(CORES) --ldc $(LDC2) \
-		--buildDir $(TMP)/$@_$(TARGET)  --targetSystem $(TARGET)              \
-		--dFlags="-mtriple=$(TARGET)"   --cFlags="$(OPT_TARGET)"
-# --ldcSrcDir $(TMP)/$@_src 
+.PHONY: ldc ldc_src
+ldc: $(LBR) $(LDC2) $(TMP)/ldc-$(LDC_VER)-src/README.md
+	$(XPATH) CC=$(TARGET)-gcc CXX=$(TARGET)-g++ $< -j$(CORES) --ldc $(LDC2)  \
+	--buildDir $(TMP)/$@_$(TARGET) --ldcSrcDir $(TMP)/ldc-$(LDC_VER)-src     \
+	--targetSystem='Linux;UNIX' CMAKE_SYSTEM_NAME=Linux BUILD_SHARED_LIBS=ON \
+	--dFlags="-mtriple=$(TARGET);-mcpu=$(CPU)" --cFlags="$(OPT_TARGET)"
+
+ldc_src: $(TMP)/ldc-$(LDC_VER)-src/README.md
+$(TMP)/ldc-$(LDC_VER)-src/README.md: $(GZ)/$(LDC_SRC)
+	cd $(TMP) ; tar zx < $< && touch $@
 
 .PHONY: init
 init: $(ROOT)/init

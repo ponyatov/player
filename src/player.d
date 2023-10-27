@@ -97,11 +97,9 @@ class MP4 : MediaFile {
 
     override void play() {
         super.play;
-        auto index0 = streams[0 .. nb_streams]
-            .countUntil!"a.codec.codec_type==b"(AVMediaType.AVMEDIA_TYPE_VIDEO);
-        assert(index0 < nb_streams);
-        vide0 = streams[index0];
-        writefln("first: %s", *vide0);
+        vide0 = (streams[0 .. nb_streams].find!"a.codec.codec_type==b"(
+                AVMediaType.AVMEDIA_TYPE_VIDEO)).takeOne[0];
+        writefln("video[0]: %s", *vide0);
         codec_context = vide0.codec;
         assert(codec_context !is null);
         codec = avcodec_find_decoder(codec_context.codec_id);
