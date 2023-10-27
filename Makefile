@@ -432,7 +432,7 @@ $(GZ)/$(ICONV_GZ):
 MERGE += README.md Makefile apt.Linux
 MERGE += .gitignore .gitattributes .stignore .clang-format .editorconfig
 MERGE += .vscode bin doc src tmp dub.json
-MERGE += all hw cpu arch app fw ref host root
+MERGE += all hw cpu arch app fw ref host root hello ldc2.conf
 
 .PHONY: dev
 dev:
