@@ -12,12 +12,23 @@ class MediaFile {
 
     string filename;
 
+    AVFormatContext* pFormatCtx = null; /// media format struc
+
+    uint nb_streams = 0; /// number of media streams
+    AVStream** streams = null; /// streams raw (pointered) array
+
     this(string filename) {
         this.filename = filename;
     }
 
     void play() {
         writeln(this);
+        assert(avformat_open_input(&pFormatCtx,
+                filename.toStringz, null, null) == 0);
+        assert(avformat_find_stream_info(pFormatCtx, null) >= 0);
+        nb_streams = pFormatCtx.nb_streams;
+        streams = pFormatCtx.streams;
+        av_dump_format(pFormatCtx, 0, filename.toStringz, 0);
     }
 
     override string toString() const {
@@ -79,13 +90,11 @@ class MP4 : MediaFile {
 
     // https://habr.com/ru/articles/137793/    
 
-    AVFormatContext* pFormatCtx = null;
     override void play() {
-        super.play();
-        assert(avformat_open_input(&pFormatCtx,
-                filename.toStringz, null, null) == 0);
-        writefln("%s", pFormatCtx.iformat.name.fromStringz);
-        assert(avformat_find_stream_info(pFormatCtx, null) >= 0);
+        super.play;
+        auto video = streams[0 .. nb_streams].find!"a.codec.codec_type==b"(
+                AVMediaType.AVMEDIA_TYPE_VIDEO)[0];
+        writefln("first: %s", video);
     }
 }
 

@@ -101,7 +101,7 @@ C += $(wildcard src/*.c*) $(wildcard init/*.c*)
 # all
 .PHONY: all
 all: $(D)
-	dub run -- root/media/park.mp4 root/media/dwsample1.mp3
+	dub run --compiler=dmd -- root/media/park.mp4 root/media/dwsample1.mp3
 
 .PHONY: fw
 fw: $(KERNEL) $(INITRD)
