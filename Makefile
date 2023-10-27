@@ -111,8 +111,8 @@ $(KERNEL): $(BZIMAGE)
 
 .PHONY: hello
 hello: $(ROOT)/bin/hello
-$(ROOT)/bin/hello: hello/hello.d
-	ldc2 -mtriple $(TARGET) -mcpu=$(CPU) -of=$@ $<
+$(ROOT)/bin/hello: hello/hello.d ldc2.conf
+	$(XPATH) ldc2 -mtriple $(TARGET) -of=$@ $< && file $@
 
 .PHONY: $(INITRD)
 $(INITRD):
@@ -325,11 +325,13 @@ busybox: $(REF)/$(BUSYBOX)/README.md
 
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
 .PHONY: ldc ldc_src
-ldc: $(LBR) $(LDC2) $(TMP)/ldc-$(LDC_VER)-src/README.md
-	$(XPATH) CC=$(TARGET)-gcc CXX=$(TARGET)-g++ $< -j$(CORES) --ldc $(LDC2)  \
-	--buildDir $(TMP)/$@_$(TARGET) --ldcSrcDir $(TMP)/ldc-$(LDC_VER)-src     \
-	--targetSystem='Linux;UNIX' CMAKE_SYSTEM_NAME=Linux BUILD_SHARED_LIBS=ON \
-	--dFlags="-mtriple=$(TARGET);-mcpu=$(CPU)" --cFlags="$(OPT_TARGET)"
+ldc: $(TMP)/ldc_$(TARGET)/lib/ldc_rt.dso.o
+$(TMP)/ldc_$(TARGET)/lib/ldc_rt.dso.o: $(LBR) $(TMP)/ldc-$(LDC_VER)-src/README.md
+	$(XPATH) CC=$(TARGET)-gcc $< -j$(CORES) --ldc $(LDC2)                      \
+	--buildDir $(TMP)/ldc_$(TARGET) --ldcSrcDir $(TMP)/ldc-$(LDC_VER)-src      \
+	--targetSystem='Linux;UNIX' CMAKE_SYSTEM_NAME=Linux BUILD_SHARED_LIBS=ON   \
+	--dFlags="-mtriple=$(TARGET);-mcpu=$(CPU)" --cFlags="$(OPT_TARGET)"      &&\
+	touch $@
 
 ldc_src: $(TMP)/ldc-$(LDC_VER)-src/README.md
 $(TMP)/ldc-$(LDC_VER)-src/README.md: $(GZ)/$(LDC_SRC)
