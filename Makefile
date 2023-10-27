@@ -43,6 +43,7 @@ ICONV_VER    = 1.17
 UCLIBC_VER   = 1.0.44
 MUSL_VER     = 1.2.4
 BUSYBOX_VER  = 1.36.1
+UNWIND_VER   = 1.6.2
 
 # package
 LDC         = ldc2-$(LDC_VER)
@@ -62,6 +63,7 @@ ICONV       = libiconv-$(ICONV_VER)
 UCLIBC      = uClibc-ng-$(UCLIBC_VER)
 MUSL        = musl-$(MUSL_VER)
 BUSYBOX     = busybox-$(BUSYBOX_VER)
+UNWIND      = libunwind-$(UNWIND_VER)
 ##
 BINUTILS_GZ = $(BINUTILS).tar.xz
 GCC_GZ      = $(GCC).tar.xz
@@ -75,6 +77,7 @@ ICONV_GZ    = $(ICONV).tar.gz
 UCLIBC_GZ   = $(UCLIBC).tar.xz
 MUSL_GZ     = $(MUSL).tar.gz
 BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
+UNWIND_GZ   = $(UNWIND).tar.gz
 
 # tool
 CURL = curl -L -o
@@ -284,6 +287,17 @@ musl: $(REF)/$(MUSL)/README.md
 	$(XPATH) $(MAKE) -j$(CORES) && $(XPATH) $(MAKE) install
 	git checkout root/sbin/ldd root/lib/ld-musl-$(ARCH).so.1
 
+.PHONY: unwind
+
+CFG_UNWIND = --host=$(TARGET) --target=$(TARGET) \
+             --prefix=$(ROOT)/unwind --with-sysroot=$(ROOT) \
+             --enable-shared --disable-static CC=$(TARGET)-gcc CXX=$(TARGET)-g++
+
+unwind: $(REF)/$(UNWIND)/README.md
+	mkdir -p $(TMP)/$(UNWIND) ; cd $(TMP)/$(UNWIND)              ;\
+	$(XPATH) $(REF)/$(UNWIND)/configure $(CFG_UNWIND)           &&\
+	$(XPATH) $(MAKE) -j$(CORES) && $(XPATH) $(MAKE) install
+
 .PHONY: uclibc
 
 UMAKE  = $(XPATH) make -C $(REF)/$(UCLIBC) O=$(TMP)/$(UCLIBC) \
@@ -324,6 +338,7 @@ busybox: $(REF)/$(BUSYBOX)/README.md
 	$(BMAKE) menuconfig && $(BMAKE) -j$(CORES) && $(BMAKE) install
 
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
+# https://gist.github.com/denizzzka/a48f70e5e698ebdf6fb031a751bc528b
 .PHONY: ldc ldc_src
 ldc: $(TMP)/ldc_$(TARGET)/lib/ldc_rt.dso.o
 $(TMP)/ldc_$(TARGET)/lib/ldc_rt.dso.o: $(LBR) $(TMP)/ldc-$(LDC_VER)-src/README.md
@@ -381,7 +396,8 @@ gz: $(LDC2) $(GZ)/$(LDC_SRC) \
 	$(GZ)/$(GMP_GZ) $(GZ)/$(MPFR_GZ) $(GZ)/$(MPC_GZ)         \
 	$(GZ)/$(BINUTILS_GZ) $(GZ)/$(GCC_GZ) $(GZ)/$(ISL_GZ)     \
 	$(GZ)/$(LINUX_GZ) $(GZ)/$(UCLIBC_GZ) $(GZ)/$(MUSL_GZ)    \
-	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ) $(GZ)/$(BUSYBOX_GZ)
+	$(GZ)/$(SYSLINUX_GZ) $(GZ)/$(ICONV_GZ) $(GZ)/$(BUSYBOX_GZ) \
+	$(GZ)/$(UNWIND_GZ)
 
 $(LDC2): $(GZ)/$(LDC_GZ)
 	cd /opt ; sudo sh -c "xzcat $< | tar x && touch $@"
@@ -396,7 +412,8 @@ $(GZ)/$(LDC_SRC):
 src: $(REF)/$(GMP)/README $(REF)/$(MPFR)/README.md $(REF)/$(MPC)/README.md \
      $(REF)/$(BINUTILS)/README.md $(REF)/$(GCC)/README.md                  \
      $(REF)/$(LINUX)/README.md $(REF)/$(UCLIBC)/README.md                  \
-     $(REF)/$(BUSYBOX)/README.md $(REF)/$(SYSLINUX)/README.md
+     $(REF)/$(BUSYBOX)/README.md $(REF)/$(SYSLINUX)/README.md \
+	 $(REF)/$(UNWIND)/README.md
 	du -csh ref/*
 
 $(GZ)/$(GMP_GZ):
@@ -421,6 +438,9 @@ $(GZ)/$(MUSL_GZ):
 	$(CURL) $@ https://musl.libc.org/releases/$(MUSL_GZ)
 $(GZ)/$(BUSYBOX_GZ):
 	$(CURL) $@ https://busybox.net/downloads/$(BUSYBOX_GZ)
+
+$(GZ)/$(UNWIND_GZ):
+	$(CURL) $@ https://download.savannah.nongnu.org/releases/libunwind/$(UNWIND_GZ)
 
 $(GZ)/$(SYSLINUX_GZ):
 	$(CURL) $@ https://mirrors.edge.kernel.org/pub/linux/utils/boot/syslinux/$(SYSLINUX_GZ)
