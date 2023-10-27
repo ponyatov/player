@@ -28,8 +28,8 @@ ROOT =  $(CWD)/root
 FW   =  $(CWD)/fw
 
 # version
+## LDC_VER   = 1.35.0 debian 12 libc 2.29 since 1.32.1
 LDC_VER      = 1.32.0
-## LDC_VER   = 1.34.0 debian 12 libc 2.29 since 1.32.1
 BINUTILS_VER = 2.41
 # GCC_VER      = 13.2.0
 GCC_VER      = 12.3.0
@@ -48,6 +48,7 @@ BUSYBOX_VER  = 1.36.1
 LDC         = ldc2-$(LDC_VER)
 LDC_OS      = $(LDC)-linux-x86_64
 LDC_GZ      = $(LDC_OS).tar.xz
+LDC_SRC     = ldc-$(LDC_VER)-src.tar.gz
 ##
 BINUTILS    = binutils-$(BINUTILS_VER)
 GCC         = gcc-$(GCC_VER)
@@ -365,7 +366,7 @@ $(APT_SRC)/%: tmp/%
 tmp/d-apt.list:
 	$(CURL) $@ http://master.dl.sourceforge.net/project/d-apt/files/d-apt.list
 
-gz: $(LDC2) \
+gz: $(LDC2) $(GZ)/$(LDC_SRC) \
 	$(GZ)/$(GMP_GZ) $(GZ)/$(MPFR_GZ) $(GZ)/$(MPC_GZ)         \
 	$(GZ)/$(BINUTILS_GZ) $(GZ)/$(GCC_GZ) $(GZ)/$(ISL_GZ)     \
 	$(GZ)/$(LINUX_GZ) $(GZ)/$(UCLIBC_GZ) $(GZ)/$(MUSL_GZ)    \
@@ -376,6 +377,8 @@ $(LDC2): $(GZ)/$(LDC_GZ)
 
 $(GZ)/$(LDC_GZ):
 	$(CURL) $@ https://github.com/ldc-developers/ldc/releases/download/v$(LDC_VER)/$(LDC_GZ)
+$(GZ)/$(LDC_SRC):
+	$(CURL) $@ https://github.com/ldc-developers/ldc/releases/download/v$(LDC_VER)/$(LDC_SRC)
 
 # src
 .PHONY: src
