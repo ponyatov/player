@@ -17,6 +17,11 @@ class MediaFile {
     uint nb_streams = 0; /// number of media streams
     AVStream** streams = null; /// streams raw (pointered) array
 
+    AVStream* vide0 = null; /// first video in file
+
+    AVCodecContext* codec_context = null;
+    AVCodec* codec = null;
+
     this(string filename) {
         this.filename = filename;
     }
@@ -92,9 +97,16 @@ class MP4 : MediaFile {
 
     override void play() {
         super.play;
-        auto video = streams[0 .. nb_streams].find!"a.codec.codec_type==b"(
-                AVMediaType.AVMEDIA_TYPE_VIDEO)[0];
-        writefln("first: %s", video);
+        auto index0 = streams[0 .. nb_streams]
+            .countUntil!"a.codec.codec_type==b"(AVMediaType.AVMEDIA_TYPE_VIDEO);
+        assert(index0 < nb_streams);
+        vide0 = streams[index0];
+        writefln("first: %s", *vide0);
+        codec_context = vide0.codec;
+        assert(codec_context !is null);
+        codec = avcodec_find_decoder(codec_context.codec_id);
+        assert(codec !is null);
+        writefln("codec: %s", codec.id);
     }
 }
 
