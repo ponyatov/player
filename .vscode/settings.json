@@ -12,14 +12,14 @@
 
     // files
     "files.exclude": {
-        "root/lib/modules/*/build": true,
+        "root/lib/modules/*/build" : true,
         "root/lib/modules/*/source": true,
     },
     "files.associations": {
-        "*.S": "gas",
+        "*.S"     : "gas",
         "*.kernel": "makefile",
         "*.uclibc": "makefile",
-        "*.bb": "makefile",
+        "*.bb"    : "makefile",
     },
 
     // editor
@@ -51,8 +51,8 @@
         "${userHome}/D/ref",
         "${userHome}/.dub/packages"
     ],
-    "d.dubPath": "/usr/bin/dub",
-    "d.dmdPath": "/usr/bin/dmd",
-    "d.dubCompiler": "/usr/bin/dub",
+    "d.dubPath"    : "/usr/bin/dub",
+    "d.dmdPath"    : "/usr/bin/dmd",
+    "d.dubCompiler": "/usr/bin/dmd",
     "d.toolchainRequirements.dub": "1.34.0"
 }
