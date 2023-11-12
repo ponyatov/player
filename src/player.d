@@ -176,6 +176,8 @@ class Window {
     SDL_RendererInfo renderinfo;
     SDL_Texture* yuv = null; /// YUV texture for video play
 
+    SDL_Rect fs; /// full-screen area rect
+
     this(string title) {
         win = SDL_CreateWindow(title.toStringz, SDL_WINDOWPOS_UNDEFINED,
                 SDL_WINDOWPOS_UNDEFINED, LCDpanel.W,
@@ -189,7 +191,9 @@ class Window {
                 renderinfo.max_texture_width, renderinfo.max_texture_height);
         // foreach (i; 0 .. renderinfo.num_texture_formats) 
         //     writefln("texture: %s", cast(const char*)(renderinfo.texture_formats[i]).fromStringz);
-
+        fs.x = fs.y = 0;
+        fs.w = LCDpanel.W;
+        fs.h = LCDpanel.H;
     }
 
     ~this() {
@@ -197,17 +201,15 @@ class Window {
         SDL_DestroyRenderer(render);
         SDL_DestroyWindow(win);
         SDL_Quit();
-
     }
 
     void yuvinit(uint w, uint h) {
         yuv = SDL_CreateTexture(render, SDL_PIXELFORMAT_YV12,
                 SDL_TEXTUREACCESS_STREAMING, w, h);
         assert(yuv !is null);
+        fs.w = w;
+        fs.h = h - 100;
     }
-
-    bool quit = false;
-    SDL_Event event;
 
     void clear() {
         SDL_SetRenderDrawColor(render, 0x22, 0x22, 0x22, 0);
@@ -216,9 +218,12 @@ class Window {
 
     void blit() {
         clear;
+        SDL_RenderCopy(render, yuv, null, &fs);
         SDL_RenderPresent(render);
     }
 
+    bool quit = false; /// loop flag for @ref loop
+    SDL_Event event; /// polled SDL event
     bool loop() {
         blit;
         // keys
