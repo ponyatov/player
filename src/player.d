@@ -16,8 +16,7 @@ class MediaFile {
 
     uint nb_streams = 0; /// number of media streams
     AVStream** streams = null; /// streams raw (pointered) array
-
-    AVStream* vide0 = null; /// first video in file
+    AVStream* stream0 = null; /// default: first AV stream
 
     AVCodecContext* codec_context = null;
     AVCodec* codec = null;
@@ -27,13 +26,29 @@ class MediaFile {
     }
 
     void play() {
+    }
+
+    void ffplay(AVMediaType mtype) {
+        writeln();
         writeln(this);
+        // format
         assert(avformat_open_input(&pFormatCtx,
                 filename.toStringz, null, null) == 0);
         assert(avformat_find_stream_info(pFormatCtx, null) >= 0);
-        nb_streams = pFormatCtx.nb_streams;
-        streams = pFormatCtx.streams;
         av_dump_format(pFormatCtx, 0, filename.toStringz, 0);
+        // stream[0]
+        streams = pFormatCtx.streams;
+        nb_streams = pFormatCtx.nb_streams;
+        stream0 = (streams[0 .. nb_streams].find!"a.codec.codec_type==b"(
+                mtype)).takeOne[0];
+        writefln("stream[0]: %s", *stream0);
+        // codec
+        codec_context = stream0.codec;
+        assert(codec_context !is null);
+        codec = avcodec_find_decoder(codec_context.codec_id);
+        assert(codec !is null);
+        writefln("codec: %s", codec.id);
+        assert(avcodec_open2(codec_context, codec, null) >= 0);
     }
 
     override string toString() const {
@@ -80,7 +95,7 @@ class MP3 : MediaFile {
 
     Mix_Music* music;
     override void play() {
-        super.play;
+        super.ffplay(AVMediaType.AVMEDIA_TYPE_AUDIO);
         // music = Mix_LoadMUS(filename.toStringz);
         // assert(music !is null);
         // Mix_PlayMusic(music, 1);
@@ -96,19 +111,11 @@ class MP4 : MediaFile {
     // https://habr.com/ru/articles/137793/    
 
     override void play() {
-        super.play;
-        vide0 = (streams[0 .. nb_streams].find!"a.codec.codec_type==b"(
-                AVMediaType.AVMEDIA_TYPE_VIDEO)).takeOne[0];
-        writefln("video[0]: %s", *vide0);
-        codec_context = vide0.codec;
-        assert(codec_context !is null);
-        codec = avcodec_find_decoder(codec_context.codec_id);
-        assert(codec !is null);
-        writefln("codec: %s", codec.id);
+        super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
     }
 }
 
-enum Video {
+enum LCDpanel {
     W = 240,
     H = 320
 }
@@ -147,7 +154,7 @@ void main(string[] args) {
     init_libs();
     // 
     auto wmain = SDL_CreateWindow(args[0].toStringz, SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED, Video.W, Video.H, SDL_WINDOW_SHOWN);
+            SDL_WINDOWPOS_UNDEFINED, LCDpanel.W, LCDpanel.H, SDL_WINDOW_SHOWN);
     assert(wmain);
     // 
     foreach (file; playlist)

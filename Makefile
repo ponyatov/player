@@ -7,15 +7,6 @@ REL     = $(shell git rev-parse --short=4 HEAD)
 BRANCH  = $(shell git rev-parse --abbrev-ref HEAD)
 CORES  ?= $(shell grep processor /proc/cpuinfo | wc -l)
 
-# cross
-APP         = $(module)
-HW         ?= qemu386
-include  all/all.mk
-include   hw/$(HW).mk
-include  cpu/$(CPU).mk
-include arch/$(ARCH).mk
-include  app/$(APP).mk
-
 # dir
 CWD  = $(CURDIR)
 BIN  =  $(CWD)/bin
@@ -23,67 +14,27 @@ REF  =  $(CWD)/ref
 SRC  =  $(CWD)/src
 TMP  =  $(CWD)/tmp
 GZ   = $(HOME)/gz
-HOST =  $(CWD)/host
-ROOT =  $(CWD)/root
-FW   =  $(CWD)/fw
+HOST = $(HOME)/Dilang/host
+ROOT = $(HOME)/Dilang/root
+FW   = $(HOME)/Dilang/fw
 
 # version
 ## LDC_VER   = 1.35.0 debian 12 libc 2.29 since 1.32.1
 LDC_VER      = 1.32.0
-BINUTILS_VER = 2.41
-## GCC_VER   = 13.2.0 debian 10 gdc-8 too old for build
-GCC_VER      = 12.3.0
-GMP_VER      = 6.2.1
-MPFR_VER     = 4.2.1
-MPC_VER      = 1.3.1
-ISL_VER      = 0.24
-LINUX_VER    = 6.5.6
-ICONV_VER    = 1.17
-UCLIBC_VER   = 1.0.44
-MUSL_VER     = 1.2.4
-BUSYBOX_VER  = 1.36.1
-UNWIND_VER   = 1.6.2
-SYSLINUX_VER = 6.03
 
 # package
 LDC         = ldc2-$(LDC_VER)
 LDC_HOST    = $(LDC)-linux-x86_64
 LDC_GZ      = $(LDC_OS).tar.xz
 LDC_SRC     = ldc-$(LDC_VER)-src.tar.gz
-##
-BINUTILS    = binutils-$(BINUTILS_VER)
-GCC         = gcc-$(GCC_VER)
-GMP         = gmp-$(GMP_VER)
-MPFR        = mpfr-$(MPFR_VER)
-MPC         = mpc-$(MPC_VER)
-ISL         = isl-$(ISL_VER)
-LINUX       = linux-$(LINUX_VER)
-MUSL        = musl-$(MUSL_VER)
-BUSYBOX     = busybox-$(BUSYBOX_VER)
-ICONV       = libiconv-$(ICONV_VER)
-UCLIBC      = uClibc-ng-$(UCLIBC_VER)
-UNWIND      = libunwind-$(UNWIND_VER)
-SYSLINUX    = syslinux-$(SYSLINUX_VER)
-##
-BINUTILS_GZ = $(BINUTILS).tar.xz
-GCC_GZ      = $(GCC).tar.xz
-GMP_GZ      = $(GMP).tar.gz
-MPFR_GZ     = $(MPFR).tar.xz
-MPC_GZ      = $(MPC).tar.gz
-ISL_GZ      = $(ISL).tar.bz2
-LINUX_GZ    = $(LINUX).tar.xz
-MUSL_GZ     = $(MUSL).tar.gz
-BUSYBOX_GZ  = $(BUSYBOX).tar.bz2
-UNWIND_GZ   = $(UNWIND).tar.gz
-SYSLINUX_GZ = $(SYSLINUX).tar.xz
-ICONV_GZ    = $(ICONV).tar.gz
-UCLIBC_GZ   = $(UCLIBC).tar.xz
 
 # tool
 CURL = curl -L -o
-GDCH = /usr/local/bin/gdc-12
-CCH  = /usr/local/bin/gcc-12
-CXXH = /usr/local/bin/g++-12
+DC   = dmd
+RUN  = dub run --compiler=$(DC)
+GDC  = /usr/local/bin/gdc-12
+GCC  = /usr/local/bin/gcc-12
+GXX  = /usr/local/bin/g++-12
 LLC  = llc-15
 LDC2 = /opt/$(LDC_HOST)/bin/ldc2
 LBR  = /opt/$(LDC_HOST)/bin/ldc-build-runtime
@@ -105,18 +56,7 @@ C += $(wildcard src/*.c*) $(wildcard init/*.c*)
 # all
 .PHONY: all
 all: $(D)
-	dub run --compiler=dmd -- root/media/park.mp4 root/media/dwsample1.mp3
-
-.PHONY: hello
-HELLO_SRC = $(wildcard hello/src/*.d) hello/dub.json dub.json ldc2.conf
-hello: $(HELLO_SRC)
-	$(DUB) $(RUN) :$@
-$(ROOT)/bin/hello: $(HELLO_SRC)
-	$(DUB) build --compiler=$(LDC2) --arch=$(TARGET) :hello
-
-.PHONY: root
-root: $(ROOT)/bin/hello
-	$(MAKE) $(INITRD)
+	$(RUN) -- media/park.mp4 media/dwsample1.mp3
 
 .PHONY: fw $(INITRD)
 fw: $(KERNEL) $(INITRD)
@@ -136,7 +76,7 @@ format: tmp/format_c tmp/format_d
 tmp/format_c: $(C)
 	clang-format -style=file -i $? && touch $@
 tmp/format_d: $(D)
-	$(DUB) $(RUN) dfmt -- -i $? && touch $@
+	$(RUN) dfmt -- -i $? && touch $@
 
 # https://wiki.dlang.org/Building_LDC_runtime_libraries
 # https://gist.github.com/denizzzka/a48f70e5e698ebdf6fb031a751bc528b
@@ -177,6 +117,7 @@ ETC_APT = $(APT_SRC)/d-apt.list $(APT_SRC)/llvm.list
 .PHONY: install update doc gz
 install: doc gz $(ETC_APT)
 	sudo apt update && sudo apt --allow-unauthenticated install -yu d-apt-keyring
+	dub fetch dfmt
 	$(MAKE) update
 update:
 	sudo apt update
