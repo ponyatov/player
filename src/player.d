@@ -18,8 +18,9 @@ class MediaFile {
     AVStream** streams = null; /// streams raw (pointered) array
     AVStream* stream0 = null; /// default: first AV stream
 
-    AVCodecContext* codec_context = null;
-    AVCodec* codec = null;
+    AVCodecContext* codec_context = null; /// media stream codec ctx
+    AVCodecContext* codec_decoder = null; /// codec ctx copy for decoder
+    AVCodec* codec = null; /// found decoder
 
     this(string filename) {
         this.filename = filename;
@@ -48,7 +49,9 @@ class MediaFile {
         codec = avcodec_find_decoder(codec_context.codec_id);
         assert(codec !is null);
         writefln("codec: %s", codec.id);
-        assert(avcodec_open2(codec_context, codec, null) >= 0);
+        codec_decoder = avcodec_alloc_context3(codec);
+        assert(avcodec_copy_context(codec_decoder, codec_context) == 0);
+        assert(avcodec_open2(codec_decoder, codec, null) >= 0);
     }
 
     override string toString() const {
@@ -108,11 +111,30 @@ class MP4 : MediaFile {
         super(filename);
     }
 
-    // https://habr.com/ru/articles/137793/    
+    AVFrame frame; /// current AV frame: output video frames
+    AVPacket packet; /// current AV packet: read data from file
+    int finished; ///
+
+    SwsContext* sws_context = null;
 
     override void play() {
         super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
-        win.yuvoverlay(codec_context.width, codec_context.height);
+        win.yuvinit(codec_context.width, codec_context.height);
+        // scaler
+        sws_context = sws_getCachedContext(null, codec_context.width,
+                codec_context.height, codec_context.pix_fmt,
+                LCDpanel.W, LCDpanel.H,
+                AVPixelFormat.AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, null);
+        assert(sws_context !is null);
+        //
+        // https://habr.com/ru/articles/137793/
+        // 
+
+        // av_init_packet(&packet);
+        // finished = 0;
+        // // while (!finished)
+        // avcodec_decode_video2(codec_context, &frame, &finished, &packet);
+        // writefln("\nframe finished:%s", finished);
     }
 }
 
@@ -164,7 +186,7 @@ class Window {
 
     }
 
-    void yuvoverlay(uint w, uint h) {
+    void yuvinit(uint w, uint h) {
         yuv = SDL_CreateTexture(render, SDL_PIXELFORMAT_YV12,
                 SDL_TEXTUREACCESS_STATIC, w, h);
         assert(yuv !is null);
