@@ -31,23 +31,14 @@ LDC_SRC     = ldc-$(LDC_VER)-src.tar.gz
 # tool
 CURL = curl -L -o
 DC   = dmd
-RUN  = dub run --compiler=$(DC)
+RUN  = dub run   --compiler=$(DC)
+BLD  = dub build --compiler=$(DC)
 GDC  = /usr/local/bin/gdc-12
 GCC  = /usr/local/bin/gcc-12
 GXX  = /usr/local/bin/g++-12
 LLC  = llc-15
 LDC2 = /opt/$(LDC_HOST)/bin/ldc2
 LBR  = /opt/$(LDC_HOST)/bin/ldc-build-runtime
-QEMU = qemu-system-$(ARCH)
-
-# cfg
-XPATH    = PATH=$(HOST)/bin:$(PATH)
-GCC_HOST = GDC=$(GDCH) CC=$(CCH) CXX=$(CXXH)
-CFG_HOST = configure --prefix=$(HOST) $(GCC_HOST)
-
-BZIMAGE  = tmp/$(LINUX)/arch/x86/boot/bzImage
-KERNEL   = $(FW)/$(APP)_$(HW).kernel
-INITRD   = $(FW)/$(APP)_$(HW).cpio.gz
 
 # src
 D += $(wildcard src/*.d*) $(wildcard init/*.d*) $(wildcard hello/*.d*)
@@ -55,21 +46,13 @@ C += $(wildcard src/*.c*) $(wildcard init/*.c*)
 
 # all
 .PHONY: all
-all: $(D)
-	$(RUN) -- media/park.mp4 media/dwsample1.mp3
+all: bin/$(MODULE)
+bin/$(MODULE): $(D)
+	$(BLD)
 
-.PHONY: fw $(INITRD)
-fw: $(KERNEL) $(INITRD)
-$(KERNEL): $(BZIMAGE)
-	cp $< $@
-$(INITRD):
-	cd $(ROOT) ; find . -print0 | cpio --null --create --format=newc | gzip -9 > $@
-
-.PHONY: qemu
-qemu: $(KERNEL) $(INITRD)
-	xterm -e $(QEMU) $(QEMU_CFG) \
-		-kernel $(KERNEL) -initrd $(INITRD) \
-		-nographic -append "console=ttyS0,115200 vga=0x318"
+.PHONY: run
+run: bin/$(MODULE) media/park.mp4 media/dwsample1.mp3
+	$^
 
 # format
 format: tmp/format_c tmp/format_d

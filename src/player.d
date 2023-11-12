@@ -111,7 +111,8 @@ class MP4 : MediaFile {
         super(filename);
     }
 
-    AVFrame frame; /// current AV frame: output video frames
+    AVFrame* srcframe = null; /// stream source frame
+    AVFrame* yuvframe = null; /// current AV frame: output video frames
     AVPacket packet; /// current AV packet: read data from file
     int finished; ///
 
@@ -120,6 +121,11 @@ class MP4 : MediaFile {
     override void play() {
         super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
         win.yuvinit(codec_context.width, codec_context.height);
+        // buffers
+        srcframe = av_frame_alloc();
+        assert(srcframe !is null);
+        yuvframe = av_frame_alloc();
+        assert(yuvframe !is null);
         // scaler
         sws_context = sws_getCachedContext(null, codec_context.width,
                 codec_context.height, codec_context.pix_fmt,
@@ -186,10 +192,48 @@ class Window {
 
     }
 
+    ~this() {
+        SDL_DestroyTexture(yuv);
+        SDL_DestroyRenderer(render);
+        SDL_DestroyWindow(win);
+        SDL_Quit();
+
+    }
+
     void yuvinit(uint w, uint h) {
         yuv = SDL_CreateTexture(render, SDL_PIXELFORMAT_YV12,
-                SDL_TEXTUREACCESS_STATIC, w, h);
+                SDL_TEXTUREACCESS_STREAMING, w, h);
         assert(yuv !is null);
+    }
+
+    bool quit = false;
+    SDL_Event event;
+
+    void clear() {
+        SDL_SetRenderDrawColor(render, 0x22, 0x22, 0x22, 0);
+        SDL_RenderClear(render);
+    }
+
+    void blit() {
+        clear;
+        SDL_RenderPresent(render);
+    }
+
+    bool loop() {
+        blit;
+        // keys
+        SDL_Delay(222);
+        SDL_PumpEvents;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+            case SDL_QUIT:
+            case SDL_KEYDOWN:
+            case SDL_MOUSEBUTTONDOWN:
+                return false;
+            default:
+            }
+        }
+        return true;
     }
 }
 
@@ -213,21 +257,7 @@ void main(string[] args) {
     foreach (file; playlist)
         file.play();
     // 
-    bool quit = false;
-    SDL_Event event;
-    while (!quit) {
-        SDL_Delay(222);
-        SDL_PumpEvents;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT:
-            case SDL_KEYDOWN:
-            case SDL_MOUSEBUTTONDOWN:
-                quit = true;
-                break;
-            default:
-            }
-        }
+    while (win.loop) {
     }
-    SDL_Quit();
+    win.destroy;
 }
