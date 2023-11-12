@@ -112,6 +112,7 @@ class MP4 : MediaFile {
 
     override void play() {
         super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
+        win.yuvoverlay(codec_context.width, codec_context.height);
     }
 }
 
@@ -141,6 +142,37 @@ void init_libs() {
     av_register_all();
 }
 
+class Window {
+    SDL_Window* win = null;
+    SDL_Renderer* render = null;
+    SDL_RendererInfo renderinfo;
+    SDL_Texture* yuv = null; /// YUV texture for video play
+
+    this(string title) {
+        win = SDL_CreateWindow(title.toStringz, SDL_WINDOWPOS_UNDEFINED,
+                SDL_WINDOWPOS_UNDEFINED, LCDpanel.W,
+                LCDpanel.H, SDL_WINDOW_SHOWN);
+        assert(win);
+        render = SDL_CreateRenderer(win, -1, 0);
+        assert(render !is null);
+        SDL_GetRendererInfo(render, &renderinfo);
+        writefln("\nrender:%s flags:%s %sx%s",
+                renderinfo.name.fromStringz, renderinfo.flags,
+                renderinfo.max_texture_width, renderinfo.max_texture_height);
+        // foreach (i; 0 .. renderinfo.num_texture_formats) 
+        //     writefln("texture: %s", cast(const char*)(renderinfo.texture_formats[i]).fromStringz);
+
+    }
+
+    void yuvoverlay(uint w, uint h) {
+        yuv = SDL_CreateTexture(render, SDL_PIXELFORMAT_YV12,
+                SDL_TEXTUREACCESS_STATIC, w, h);
+        assert(yuv !is null);
+    }
+}
+
+Window win;
+
 void main(string[] args) {
     argw(0, args[0]);
     foreach (argc, argv; args[1 .. $].enumerate) {
@@ -153,9 +185,8 @@ void main(string[] args) {
     // 
     init_libs();
     // 
-    auto wmain = SDL_CreateWindow(args[0].toStringz, SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED, LCDpanel.W, LCDpanel.H, SDL_WINDOW_SHOWN);
-    assert(wmain);
+    win = new Window(args[0]);
+    assert(win !is null);
     // 
     foreach (file; playlist)
         file.play();
