@@ -1,4 +1,4 @@
-module window; 
+module window;
 
 import config;
 
@@ -79,3 +79,5 @@ class Window {
         return true;
     }
 }
+
+Window win;
