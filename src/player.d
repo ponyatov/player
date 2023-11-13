@@ -15,10 +15,7 @@ import playlist;
 import mp3;
 import mp4;
 
-// void mk_playlist(string[] args) {
-// }
-
-void init_libs() {
+static this() {
     assert(SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO) == 0);
     const auto mixer_flags = MIX_INIT_MP3;
     assert(mixer_flags == Mix_Init(mixer_flags));
@@ -43,8 +40,6 @@ void main(string[] args) {
         else if (argv.endsWith(".mp4"))
             plist ~= new MP4(argv);
     }
-    // 
-    init_libs();
     // 
     win = new Window(args[0]);
     assert(win !is null);

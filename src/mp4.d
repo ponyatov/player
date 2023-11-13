@@ -2,6 +2,8 @@ module mp4;
 
 import config;
 
+import std.stdio;
+
 import ffmpeg;
 
 import mediafile;
@@ -18,16 +20,39 @@ class MP4 : MediaFile {
     AVPacket packet; /// current AV packet: read data from file
     int finished; ///
 
+    ubyte* buffer = null; /// i/o buffer for decoder
+    uint buffer_size = 0; /// i/o buffer in bytes
+
     SwsContext* sws_context = null;
 
-    override void play() {
-        super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
+    ~this() {
+        if (buffer !is null)
+            av_free(buffer);
+        if (srcframe !is null)
+            av_frame_free(&srcframe);
+        if (yuvframe !is null)
+            av_frame_free(&yuvframe);
+        packet.destroy();
+    }
+
+    void bufsinit() {
+        // set SDL output buffers with media W/H
         win.yuvinit(codec_context.width, codec_context.height);
-        // buffers
+        // AV frames
         srcframe = av_frame_alloc();
         assert(srcframe !is null);
         yuvframe = av_frame_alloc();
         assert(yuvframe !is null);
+        // i/o buffers
+        auto buffer_size = avpicture_get_size(AVPixelFormat.AV_PIX_FMT_YUV420P,
+                codec_context.width, codec_context.height);
+        buffer = cast(ubyte*) av_malloc(buffer_size);
+        assert(buffer !is null);
+    }
+
+    override void play() {
+        super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
+        bufsinit;
         // scaler
         sws_context = sws_getCachedContext(null, codec_context.width,
                 codec_context.height, codec_context.pix_fmt,

@@ -58,5 +58,3 @@ class MediaFile {
         return format("%s(%s)", this.classinfo.name, filename);
     }
 }
-
-MediaFile[] plist;

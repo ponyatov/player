@@ -21,7 +21,7 @@ class Window {
                 SDL_WINDOWPOS_UNDEFINED, LCDpanel.W,
                 LCDpanel.H, SDL_WINDOW_SHOWN);
         assert(win);
-        render = SDL_CreateRenderer(win, -1, 0);
+        render = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
         assert(render !is null);
         SDL_GetRendererInfo(render, &renderinfo);
         writefln("\nrender:%s flags:%s %sx%s",
@@ -80,4 +80,4 @@ class Window {
     }
 }
 
-Window win;
+Window win = null;

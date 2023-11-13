@@ -32,3 +32,5 @@ class PlayList {
     }
 
 }
+
+MediaFile[] plist;
