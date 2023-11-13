@@ -33,9 +33,11 @@ class MP4 : MediaFile {
         if (yuvframe !is null)
             av_frame_free(&yuvframe);
         packet.destroy();
+        if (sws_context !is null)
+            sws_freeContext(sws_context);
     }
 
-    void bufsinit() {
+    void buffers() {
         // set SDL output buffers with media W/H
         win.yuvinit(codec_context.width, codec_context.height);
         // AV frames
@@ -50,15 +52,21 @@ class MP4 : MediaFile {
         assert(buffer !is null);
     }
 
+    void scaler() {
+        // sws_context = sws_getCachedContext(null, codec_context.width,
+        //         codec_context.height, codec_context.pix_fmt,
+        //         LCDpanel.W, LCDpanel.H,
+        //         AVPixelFormat.AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, null);
+        // assert(sws_context !is null);
+        avpicture_fill(cast(AVPicture*) srcframe, buffer,
+                AVPixelFormat.AV_PIX_FMT_YUV420P,
+                codec_context.width, codec_context.height);
+    }
+
     override void play() {
         super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
-        bufsinit;
-        // scaler
-        sws_context = sws_getCachedContext(null, codec_context.width,
-                codec_context.height, codec_context.pix_fmt,
-                LCDpanel.W, LCDpanel.H,
-                AVPixelFormat.AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, null);
-        assert(sws_context !is null);
+        buffers;
+        // scaler;
         //
         // https://habr.com/ru/articles/137793/
         // 
