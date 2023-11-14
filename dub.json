@@ -1,12 +1,12 @@
 {
-    "name":        "player",
-    "description": "media player in D lang /with network remote control/",
-    "authors":    ["Dmitry Ponyatov <dponyatov@gmail.com>"],
-    "copyright":   "Copyright © 2023, Dmitry Ponyatov <dponyatov@gmail.com>",
-    "license":     "MIT",
-    "targetType":  "executable",
-    "targetPath":  "bin",
-    "targetName":  "player",
+    "name":         "player",
+    "description":  "media player in D lang /with network remote control/",
+    "authors":     ["Dmitry Ponyatov <dponyatov@gmail.com>"],
+    "copyright":    "Copyright © 2023, Dmitry Ponyatov <dponyatov@gmail.com>",
+    "license":      "MIT",
+    "targetType":   "executable",
+    "targetPath":   "bin",
+    "targetName":   "player",
     "dependencies": {
         "bindbc-sdl": "~>1.4.2",
         "ffmpeg-d": "~>4.4.1"
