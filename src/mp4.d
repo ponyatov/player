@@ -20,14 +20,16 @@ class MP4 : MediaFile {
     AVPacket packet; /// current AV packet: read data from file
     int finished; ///
 
-    ubyte* buffer = null; /// i/o buffer for decoder
-    uint buffer_size = 0; /// i/o buffer in bytes
+    ubyte* srcbuffer = null; /// i/o buffer for decoder
+    uint srcbuffer_size = 0; /// @ref srcbuffer size in bytes
+    ubyte* yuvbuffer = null; /// i/o buffer for SDL YUV output
+    uint yuvbuffer_size = 0; /// @ref yuvbuffer size in bytes
 
     SwsContext* sws_context = null;
 
     ~this() {
-        if (buffer !is null)
-            av_free(buffer);
+        if (srcbuffer !is null)
+            av_free(srcbuffer);
         if (srcframe !is null)
             av_frame_free(&srcframe);
         if (yuvframe !is null)
@@ -46,10 +48,21 @@ class MP4 : MediaFile {
         yuvframe = av_frame_alloc();
         assert(yuvframe !is null);
         // i/o buffers
-        auto buffer_size = avpicture_get_size(AVPixelFormat.AV_PIX_FMT_YUV420P,
+        srcbuffer_size = avpicture_get_size(codec_context.pix_fmt,
                 codec_context.width, codec_context.height);
-        buffer = cast(ubyte*) av_malloc(buffer_size);
-        assert(buffer !is null);
+        srcbuffer = cast(ubyte*) av_malloc(srcbuffer_size);
+        assert(srcbuffer !is null);
+        // 
+        yuvbuffer_size = avpicture_get_size(AVPixelFormat.AV_PIX_FMT_YUV420P,
+                LCDpanel.W, LCDpanel.H);
+        yuvbuffer = cast(ubyte*) av_malloc(yuvbuffer_size);
+        assert(yuvbuffer !is null);
+        // bind raw buffers to frames
+        avpicture_fill(cast(AVPicture*) srcframe, srcbuffer,
+                codec_context.pix_fmt, codec_context.width,
+                codec_context.height);
+        avpicture_fill(cast(AVPicture*) yuvframe, yuvbuffer,
+                AVPixelFormat.AV_PIX_FMT_YUV420P, LCDpanel.W, LCDpanel.H);
     }
 
     void scaler() {
@@ -58,15 +71,12 @@ class MP4 : MediaFile {
         //         LCDpanel.W, LCDpanel.H,
         //         AVPixelFormat.AV_PIX_FMT_YUV420P, SWS_BICUBIC, null, null, null);
         // assert(sws_context !is null);
-        avpicture_fill(cast(AVPicture*) srcframe, buffer,
-                AVPixelFormat.AV_PIX_FMT_YUV420P,
-                codec_context.width, codec_context.height);
     }
 
     override void play() {
         super.ffplay(AVMediaType.AVMEDIA_TYPE_VIDEO);
         buffers;
-        // scaler;
+        scaler;
         //
         // https://habr.com/ru/articles/137793/
         // 
